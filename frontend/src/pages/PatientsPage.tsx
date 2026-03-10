@@ -48,24 +48,21 @@ export function PatientsPage() {
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor(
-        (row) => `${row.last_name}, ${row.first_name}`,
-        {
-          id: 'name',
-          header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Nombre" />
-          ),
-          cell: ({ row }) => (
-            <Link
-              to={`/app/patients/${row.original.id}`}
-              className="font-medium text-foreground transition-colors hover:text-primary hover:underline underline-offset-4"
-            >
-              {row.original.last_name}, {row.original.first_name}
-            </Link>
-          ),
-          filterFn: 'includesString',
-        }
-      ),
+      columnHelper.accessor((row) => `${row.last_name}, ${row.first_name}`, {
+        id: 'name',
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Nombre" />
+        ),
+        cell: ({ row }) => (
+          <Link
+            to={`/app/patients/${row.original.id}`}
+            className="font-medium text-foreground transition-colors hover:text-primary hover:underline underline-offset-4"
+          >
+            {row.original.last_name}, {row.original.first_name}
+          </Link>
+        ),
+        filterFn: 'includesString',
+      }),
       columnHelper.accessor('phone', {
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Teléfono" />
