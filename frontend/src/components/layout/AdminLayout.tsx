@@ -1,23 +1,25 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import { Building2 } from 'lucide-react';
+
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
+import { DashboardShell } from './DashboardShell';
+
+const SIDEBAR_ITEMS = [
+  { to: '/admin/tenants', label: 'Profesionales', icon: Building2 },
+] as const;
 
 export function AdminLayout() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b px-4 py-3 flex items-center justify-between">
-        <Link to="/admin/tenants" className="font-semibold">
-          Panel Admin — Profesionales
-        </Link>
-        <Button variant="outline" size="sm" onClick={logout}>
-          Cerrar sesión
-        </Button>
-      </header>
-      <main className="p-4">
-        <Outlet />
-      </main>
-    </div>
+    <DashboardShell
+      sidebarItems={SIDEBAR_ITEMS}
+      headerTitle="Panel Admin"
+      onLogout={logout}
+      userEmail={user?.email}
+      userName={user?.fullName}
+    >
+      <Outlet />
+    </DashboardShell>
   );
 }
