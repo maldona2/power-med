@@ -30,7 +30,6 @@ interface SidebarItem {
 
 interface DashboardShellProps {
   sidebarItems: readonly SidebarItem[];
-  headerTitle: string;
   onLogout: () => void;
   userEmail?: string | null;
   userName?: string | null;
@@ -163,7 +162,6 @@ function UserMenu({
 
 export function DashboardShell({
   sidebarItems,
-  headerTitle,
   onLogout,
   userEmail,
   userName,
@@ -284,10 +282,6 @@ export function DashboardShell({
             >
               <Menu className="size-5" />
             </Button>
-
-            <h1 className="text-lg font-semibold text-foreground">
-              {headerTitle}
-            </h1>
           </div>
 
           <UserMenu

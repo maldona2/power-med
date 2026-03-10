@@ -14,7 +14,6 @@ export function AdminLayout() {
   return (
     <DashboardShell
       sidebarItems={SIDEBAR_ITEMS}
-      headerTitle="Panel Admin"
       onLogout={logout}
       userEmail={user?.email}
       userName={user?.fullName}
