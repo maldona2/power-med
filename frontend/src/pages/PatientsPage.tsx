@@ -79,6 +79,44 @@ export function PatientsPage() {
           <span className="text-muted-foreground">{getValue() ?? '—'}</span>
         ),
       }),
+      columnHelper.accessor((row) => row.appointment_count ?? 0, {
+        id: 'appointment_count',
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Citas" />
+        ),
+        cell: ({ row }) => {
+          const n = row.original.appointment_count ?? 0;
+          return (
+            <span className="tabular-nums text-muted-foreground">
+              {n} {n === 1 ? 'cita' : 'citas'}
+            </span>
+          );
+        },
+      }),
+      columnHelper.accessor((row) => row.unpaid_count ?? 0, {
+        id: 'payment',
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Pago" />
+        ),
+        cell: ({ row }) => {
+          const unpaid = row.original.unpaid_count ?? 0;
+          const totalCents = row.original.unpaid_total_cents ?? 0;
+          if (unpaid === 0) {
+            return (
+              <span className="text-emerald-600 dark:text-emerald-400">
+                Al día
+              </span>
+            );
+          }
+          const amount = (totalCents / 100).toFixed(2);
+          return (
+            <span className="text-amber-600 dark:text-amber-400">
+              {unpaid} impago{unpaid !== 1 ? 's' : ''}
+              {totalCents > 0 && ` · $${amount}`}
+            </span>
+          );
+        },
+      }),
       columnHelper.display({
         id: 'actions',
         header: () => <span className="sr-only">Acciones</span>,
@@ -95,7 +133,7 @@ export function PatientsPage() {
         ),
       }),
     ],
-    []
+    [openEdit]
   );
 
   const table = useReactTable({
@@ -142,7 +180,7 @@ export function PatientsPage() {
           </Button>
         </div>
         <DataTableSkeleton
-          columnCount={4}
+          columnCount={6}
           searchableColumnCount={1}
           filterableColumnCount={0}
         />
