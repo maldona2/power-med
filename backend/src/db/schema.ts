@@ -121,6 +121,12 @@ export const appointments = pgTable(
     })
       .notNull()
       .default('pending'),
+    paymentStatus: text('payment_status', {
+      enum: ['unpaid', 'paid', 'partial', 'refunded'],
+    })
+      .notNull()
+      .default('unpaid'),
+    totalAmountCents: integer('total_amount_cents'),
     notes: text('notes'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
@@ -134,6 +140,54 @@ export const appointments = pgTable(
 
 export type Appointment = typeof appointments.$inferSelect;
 export type NewAppointment = typeof appointments.$inferInsert;
+
+// ─── treatments ──────────────────────────────────────────────────────────────
+
+export const treatments = pgTable(
+  'treatments',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    priceCents: integer('price_cents').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [index('idx_treatments_tenant').on(table.tenantId)]
+);
+
+export type Treatment = typeof treatments.$inferSelect;
+export type NewTreatment = typeof treatments.$inferInsert;
+
+// ─── appointment_treatments ───────────────────────────────────────────────────
+
+export const appointmentTreatments = pgTable(
+  'appointment_treatments',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    appointmentId: uuid('appointment_id')
+      .notNull()
+      .references(() => appointments.id, { onDelete: 'cascade' }),
+    treatmentId: uuid('treatment_id')
+      .notNull()
+      .references(() => treatments.id, { onDelete: 'cascade' }),
+    quantity: integer('quantity').notNull().default(1),
+    unitPriceCents: integer('unit_price_cents').notNull(),
+  },
+  (table) => [
+    index('idx_appointment_treatments_appointment').on(table.appointmentId),
+    index('idx_appointment_treatments_treatment').on(table.treatmentId),
+  ]
+);
+
+export type AppointmentTreatment = typeof appointmentTreatments.$inferSelect;
+export type NewAppointmentTreatment = typeof appointmentTreatments.$inferInsert;
 
 // ─── sessions ────────────────────────────────────────────────────────────────
 
@@ -174,6 +228,7 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   users: many(users),
   patients: many(patients),
   appointments: many(appointments),
+  treatments: many(treatments),
   sessions: many(sessions),
 }));
 
@@ -204,7 +259,29 @@ export const appointmentsRelations = relations(
       fields: [appointments.patientId],
       references: [patients.id],
     }),
+    appointmentTreatments: many(appointmentTreatments),
     session: many(sessions),
+  })
+);
+
+export const treatmentsRelations = relations(treatments, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [treatments.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+export const appointmentTreatmentsRelations = relations(
+  appointmentTreatments,
+  ({ one }) => ({
+    appointment: one(appointments, {
+      fields: [appointmentTreatments.appointmentId],
+      references: [appointments.id],
+    }),
+    treatment: one(treatments, {
+      fields: [appointmentTreatments.treatmentId],
+      references: [treatments.id],
+    }),
   })
 );
 

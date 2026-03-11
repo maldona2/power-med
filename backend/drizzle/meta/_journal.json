@@ -15,6 +15,13 @@
       "when": 1773174985309,
       "tag": "0001_woozy_ultimo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773194911930,
+      "tag": "0002_blushing_randall_flagg",
+      "breakpoints": true
     }
   ]
 }
