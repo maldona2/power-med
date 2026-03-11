@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { db, patients, appointments, sessions } from '../db/client.js';
 
 export interface PatientRow {
@@ -12,6 +12,12 @@ export interface PatientRow {
   notes: string | null;
   created_at: Date | null;
   updated_at: Date | null;
+  /** Number of appointments for this patient */
+  appointment_count?: number;
+  /** Number of appointments with unpaid or partial payment */
+  unpaid_count?: number;
+  /** Sum of total_amount_cents for unpaid/partial appointments */
+  unpaid_total_cents?: number;
 }
 
 export interface AppointmentWithSession {
@@ -61,12 +67,47 @@ export async function list(
     : eq(patients.tenantId, tenantId);
 
   const rows = await db
-    .select()
+    .select({
+      id: patients.id,
+      tenantId: patients.tenantId,
+      firstName: patients.firstName,
+      lastName: patients.lastName,
+      phone: patients.phone,
+      email: patients.email,
+      dateOfBirth: patients.dateOfBirth,
+      notes: patients.notes,
+      createdAt: patients.createdAt,
+      updatedAt: patients.updatedAt,
+      appointmentCount: sql<number>`count(${appointments.id})::int`.as(
+        'appointment_count'
+      ),
+      unpaidCount:
+        sql<number>`count(case when ${appointments.paymentStatus} in ('unpaid','partial') then 1 end)::int`.as(
+          'unpaid_count'
+        ),
+      unpaidTotalCents:
+        sql<number>`coalesce(sum(case when ${appointments.paymentStatus} in ('unpaid','partial') then coalesce(${appointments.totalAmountCents}, 0) else 0 end), 0)::int`.as(
+          'unpaid_total_cents'
+        ),
+    })
     .from(patients)
+    .leftJoin(
+      appointments,
+      and(
+        eq(appointments.patientId, patients.id),
+        eq(appointments.tenantId, patients.tenantId)
+      )
+    )
     .where(where)
+    .groupBy(patients.id)
     .orderBy(asc(patients.lastName), asc(patients.firstName));
 
-  return rows.map(toRow);
+  return rows.map((r) => ({
+    ...toRow(r as typeof patients.$inferSelect),
+    appointment_count: r.appointmentCount,
+    unpaid_count: r.unpaidCount,
+    unpaid_total_cents: r.unpaidTotalCents,
+  }));
 }
 
 export async function getById(
