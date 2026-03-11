@@ -39,12 +39,39 @@ export interface Patient {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  /** Number of appointments (from list API) */
+  appointment_count?: number;
+  /** Number of unpaid/partial appointments */
+  unpaid_count?: number;
+  /** Sum of total_amount_cents for unpaid/partial appointments */
+  unpaid_total_cents?: number;
+}
+
+export type PaymentStatus = 'unpaid' | 'paid' | 'partial' | 'refunded';
+
+export interface Treatment {
+  id: string;
+  tenant_id: string;
+  name: string;
+  price_cents: number;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface AppointmentTreatment {
+  id: string;
+  treatment_id: string;
+  treatment_name: string;
+  quantity: number;
+  unit_price_cents: number;
 }
 
 export interface Appointment {
   id: string;
   scheduled_at: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  payment_status?: PaymentStatus;
+  total_amount_cents?: number | null;
   duration_minutes: number;
   notes: string | null;
   patient_id: string;
@@ -69,6 +96,13 @@ export interface PatientDetail {
 export interface AppointmentDetail extends Appointment {
   procedures_performed?: string | null;
   recommendations?: string | null;
+  treatments?: AppointmentTreatment[];
+}
+
+export interface TreatmentLineItem {
+  treatment_id: string;
+  quantity: number;
+  unit_price_cents: number;
 }
 
 export interface Option {
