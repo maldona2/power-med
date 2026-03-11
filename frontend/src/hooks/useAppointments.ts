@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import type { Appointment, AppointmentDetail } from '@/types';
+import type {
+  Appointment,
+  AppointmentDetail,
+  TreatmentLineItem,
+} from '@/types';
 
 export interface AppointmentFormData {
   patient_id: string;
@@ -8,6 +12,8 @@ export interface AppointmentFormData {
   time: string;
   duration_minutes: number;
   notes: string;
+  payment_status?: 'unpaid' | 'paid' | 'partial' | 'refunded';
+  treatments?: TreatmentLineItem[];
 }
 
 export function useAppointments() {

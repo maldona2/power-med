@@ -1,6 +1,14 @@
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarIcon, Clock, FileText, Plus, User } from 'lucide-react';
+import {
+  CalendarIcon,
+  Clock,
+  FileText,
+  Plus,
+  User,
+  Syringe,
+  Trash2,
+} from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -21,12 +29,13 @@ import {
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { AppointmentFormData } from '@/hooks/useAppointments';
-import type { Patient } from '@/types';
+import type { Patient, Treatment, TreatmentLineItem } from '@/types';
 
 interface NewAppointmentSheetProps {
   form: AppointmentFormData;
   setForm: React.Dispatch<React.SetStateAction<AppointmentFormData>>;
   patients: Patient[];
+  treatments: Treatment[];
   submitting: boolean;
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -35,9 +44,58 @@ export function NewAppointmentSheet({
   form,
   setForm,
   patients,
+  treatments,
   submitting,
   onSubmit,
 }: NewAppointmentSheetProps) {
+  const lineItems = form.treatments ?? [];
+  const totalCents = lineItems.reduce(
+    (sum, t) => sum + t.quantity * t.unit_price_cents,
+    0
+  );
+
+  const addTreatment = (t: Treatment) => {
+    const existing = lineItems.find((i) => i.treatment_id === t.id);
+    if (existing) {
+      setForm((f) => ({
+        ...f,
+        treatments: (f.treatments ?? []).map((i) =>
+          i.treatment_id === t.id ? { ...i, quantity: i.quantity + 1 } : i
+        ),
+      }));
+    } else {
+      setForm((f) => ({
+        ...f,
+        treatments: [
+          ...(f.treatments ?? []),
+          {
+            treatment_id: t.id,
+            quantity: 1,
+            unit_price_cents: t.price_cents,
+          },
+        ],
+      }));
+    }
+  };
+
+  const removeLineItem = (treatmentId: string) => {
+    setForm((f) => ({
+      ...f,
+      treatments: (f.treatments ?? []).filter(
+        (i) => i.treatment_id !== treatmentId
+      ),
+    }));
+  };
+
+  const updateQuantity = (treatmentId: string, quantity: number) => {
+    if (quantity < 1) return;
+    setForm((f) => ({
+      ...f,
+      treatments: (f.treatments ?? []).map((i) =>
+        i.treatment_id === treatmentId ? { ...i, quantity } : i
+      ),
+    }));
+  };
   return (
     <div className="flex h-full flex-col">
       <SheetHeader className="border-b bg-primary/5 px-6 py-6">
@@ -152,6 +210,97 @@ export function NewAppointmentSheet({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <Syringe className="h-4 w-4 text-primary" />
+                Tratamientos{' '}
+                <span className="font-normal text-muted-foreground">
+                  (opcional)
+                </span>
+              </label>
+              {treatments.length === 0 ? (
+                <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
+                  Crea tratamientos en tu perfil para agregarlos aquí.
+                </p>
+              ) : (
+                <>
+                  <Select
+                    onValueChange={(id) => {
+                      const t = treatments.find((x) => x.id === id);
+                      if (t) addTreatment(t);
+                    }}
+                    value=""
+                  >
+                    <SelectTrigger className="h-12 rounded-lg">
+                      <SelectValue placeholder="Agregar tratamiento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {treatments.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name} — {(t.price_cents / 100).toFixed(2)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {lineItems.length > 0 && (
+                    <div className="space-y-2 rounded-lg border p-3">
+                      {lineItems.map((item) => {
+                        const t = treatments.find(
+                          (x) => x.id === item.treatment_id
+                        );
+                        return (
+                          <div
+                            key={item.treatment_id}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            <span className="text-sm font-medium">
+                              {t?.name ?? '—'} × {item.quantity}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                min={1}
+                                className="h-8 w-16"
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  updateQuantity(
+                                    item.treatment_id,
+                                    parseInt(e.target.value, 10) || 1
+                                  )
+                                }
+                              />
+                              <span className="w-16 text-right text-sm tabular-nums">
+                                {(
+                                  (item.quantity * item.unit_price_cents) /
+                                  100
+                                ).toFixed(2)}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() =>
+                                  removeLineItem(item.treatment_id)
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="flex justify-between border-t pt-2 font-medium">
+                        <span>Total</span>
+                        <span className="tabular-nums">
+                          {(totalCents / 100).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="space-y-2.5">

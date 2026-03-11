@@ -44,4 +44,6 @@ export const emptyForm: AppointmentFormData = {
   time: '10:00',
   duration_minutes: 60,
   notes: '',
+  payment_status: 'unpaid',
+  treatments: [],
 };

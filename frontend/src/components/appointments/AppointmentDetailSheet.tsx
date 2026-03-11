@@ -1,8 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarIcon, Clock, User, FileText } from 'lucide-react';
+import {
+  CalendarIcon,
+  Clock,
+  User,
+  FileText,
+  DollarSign,
+  Banknote,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
@@ -11,7 +18,38 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import api from '@/lib/api';
 import { statusConfig } from './constants';
-import type { Appointment } from '@/types';
+import type {
+  Appointment,
+  AppointmentDetail,
+  AppointmentTreatment,
+  PaymentStatus,
+} from '@/types';
+
+const paymentConfig: Record<
+  PaymentStatus,
+  { label: string; className: string }
+> = {
+  unpaid: {
+    label: 'Impago',
+    className:
+      'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/80 dark:border-amber-800 dark:text-amber-200',
+  },
+  paid: {
+    label: 'Pagado',
+    className:
+      'bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-200',
+  },
+  partial: {
+    label: 'Parcial',
+    className:
+      'bg-sky-50 border-sky-200 text-sky-900 dark:bg-sky-950/80 dark:border-sky-800 dark:text-sky-200',
+  },
+  refunded: {
+    label: 'Reembolsado',
+    className:
+      'bg-neutral-50 border-neutral-200 text-neutral-600 dark:bg-neutral-900/80 dark:border-neutral-700 dark:text-neutral-400',
+  },
+};
 
 interface AppointmentDetailSheetProps {
   appointment: Appointment;
@@ -24,17 +62,34 @@ export function AppointmentDetailSheet({
   onClose,
   onStatusChange,
 }: AppointmentDetailSheetProps) {
+  const [detail, setDetail] = useState<AppointmentDetail | null>(null);
   const [activeStatus, setActiveStatus] = useState(appointment.status);
+  const [activePayment, setActivePayment] = useState<PaymentStatus>(
+    appointment.payment_status ?? 'unpaid'
+  );
   const [isUpdating, setIsUpdating] = useState(false);
 
+  useEffect(() => {
+    api
+      .get<AppointmentDetail>(`/appointments/${appointment.id}`)
+      .then(({ data }) => {
+        setDetail(data);
+        setActiveStatus(data.status);
+        setActivePayment((data.payment_status as PaymentStatus) ?? 'unpaid');
+      })
+      .catch(() => setDetail(null));
+  }, [appointment.id]);
+
+  const display = detail ?? appointment;
   const config = statusConfig[activeStatus];
   const patient =
-    appointment.patient_last_name && appointment.patient_first_name
-      ? `${appointment.patient_last_name}, ${appointment.patient_first_name}`
-      : appointment.patient_first_name ||
-        appointment.patient_last_name ||
-        'Sin nombre';
-  const scheduledDate = parseISO(appointment.scheduled_at);
+    display.patient_last_name && display.patient_first_name
+      ? `${display.patient_last_name}, ${display.patient_first_name}`
+      : display.patient_first_name || display.patient_last_name || 'Sin nombre';
+  const scheduledDate = parseISO(display.scheduled_at);
+  const totalCents = display.total_amount_cents ?? 0;
+  const treatmentsList: AppointmentTreatment[] =
+    detail && Array.isArray(detail.treatments) ? detail.treatments : [];
 
   const handleStatusChange = async (newStatus: string) => {
     setIsUpdating(true);
@@ -48,6 +103,23 @@ export function AppointmentDetailSheet({
       toast.success('Estado actualizado');
     } catch {
       toast.error('No se pudo actualizar el estado');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handlePaymentChange = async (newPayment: PaymentStatus) => {
+    setIsUpdating(true);
+    try {
+      const { data } = await api.put<Appointment>(
+        `/appointments/${appointment.id}`,
+        { payment_status: newPayment }
+      );
+      setActivePayment((data.payment_status as PaymentStatus) ?? 'unpaid');
+      onStatusChange?.(data);
+      toast.success('Estado de pago actualizado');
+    } catch {
+      toast.error('No se pudo actualizar el pago');
     } finally {
       setIsUpdating(false);
     }
@@ -139,12 +211,71 @@ export function AppointmentDetailSheet({
                 {format(scheduledDate, 'HH:mm')}
               </p>
               <p className="text-sm text-muted-foreground">
-                {appointment.duration_minutes} minutos
+                {display.duration_minutes} minutos
               </p>
             </div>
           </div>
 
-          {appointment.notes && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <DollarSign className="h-4 w-4" />
+              <span className="text-xs font-medium uppercase tracking-wider">
+                Costo y pago
+              </span>
+            </div>
+            <div className="rounded-xl border bg-card p-4 space-y-4">
+              {treatmentsList.length > 0 && (
+                <div className="space-y-2">
+                  {treatmentsList.map((t) => (
+                    <div key={t.id} className="flex justify-between text-sm">
+                      <span>
+                        {t.treatment_name} × {t.quantity}
+                      </span>
+                      <span className="tabular-nums">
+                        {((t.quantity * t.unit_price_cents) / 100).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center justify-between border-t pt-3 font-medium">
+                <span>Total</span>
+                <span className="tabular-nums">
+                  {(totalCents / 100).toFixed(2)}
+                </span>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Estado de pago
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    Object.entries(paymentConfig) as [
+                      PaymentStatus,
+                      { label: string; className: string },
+                    ][]
+                  ).map(([key, cfg]) => (
+                    <Button
+                      key={key}
+                      variant={activePayment === key ? 'default' : 'outline'}
+                      size="sm"
+                      disabled={isUpdating || activePayment === key}
+                      onClick={() => handlePaymentChange(key)}
+                      className={cn(
+                        'h-9',
+                        activePayment === key && cfg.className
+                      )}
+                    >
+                      <Banknote className="mr-1.5 h-3.5 w-3.5" />
+                      {cfg.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {display.notes && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <FileText className="h-4 w-4" />
@@ -153,7 +284,7 @@ export function AppointmentDetailSheet({
                 </span>
               </div>
               <div className="rounded-xl border bg-card p-4">
-                <p className="text-sm leading-relaxed">{appointment.notes}</p>
+                <p className="text-sm leading-relaxed">{display.notes}</p>
               </div>
             </div>
           )}
@@ -197,7 +328,7 @@ export function AppointmentDetailSheet({
             Cerrar
           </Button>
           <Button className="h-11 flex-1" asChild>
-            <Link to={`/app/patients/${appointment.patient_id}`}>
+            <Link to={`/app/patients/${display.patient_id}`}>
               <User className="mr-2 h-4 w-4" />
               Ver paciente
             </Link>

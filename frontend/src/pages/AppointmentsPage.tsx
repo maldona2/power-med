@@ -22,6 +22,7 @@ import {
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useAppointments } from '@/hooks/useAppointments';
 import { usePatients } from '@/hooks/usePatients';
+import { useTreatments } from '@/hooks/useTreatments';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import type { Appointment } from '@/types';
@@ -44,6 +45,7 @@ export function AppointmentsPage() {
     refetch,
   } = useAppointments();
   const { patients } = usePatients();
+  const { treatments } = useTreatments();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -75,13 +77,6 @@ export function AppointmentsPage() {
 
   const openAppointmentDetails = (apt: Appointment) => {
     setSelectedAppointment(apt);
-    setForm({
-      patient_id: apt.patient_id,
-      date: parseISO(apt.scheduled_at),
-      time: format(parseISO(apt.scheduled_at), 'HH:mm'),
-      duration_minutes: apt.duration_minutes,
-      notes: apt.notes || '',
-    });
     setSheetOpen(true);
   };
 
@@ -102,6 +97,11 @@ export function AppointmentsPage() {
         scheduled_at: scheduled.toISOString(),
         duration_minutes: form.duration_minutes,
         notes: form.notes || null,
+        payment_status: form.payment_status ?? 'unpaid',
+        treatments:
+          form.treatments && form.treatments.length > 0
+            ? form.treatments
+            : undefined,
       };
 
       if (selectedAppointment) {
@@ -198,6 +198,7 @@ export function AppointmentsPage() {
               form={form}
               setForm={setForm}
               patients={patients}
+              treatments={treatments}
               submitting={submitting}
               onSubmit={handleSubmit}
             />
