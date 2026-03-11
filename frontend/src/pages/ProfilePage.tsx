@@ -15,6 +15,10 @@ import {
   Shield,
   Bell,
   Palette,
+  Syringe,
+  Plus,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -53,6 +57,8 @@ import { useTheme } from 'next-themes';
 import { useProfile } from '@/hooks/useProfile';
 import { useAppointments } from '@/hooks/useAppointments';
 import { usePatients } from '@/hooks/usePatients';
+import { useTreatments } from '@/hooks/useTreatments';
+import { TreatmentFormDialog } from '@/components/treatments';
 
 interface ProfileDoctor {
   firstName: string;
@@ -133,11 +139,24 @@ export function ProfilePage() {
   const { saving, updateProfile, changePassword } = useProfile();
   const { appointments } = useAppointments();
   const { patients } = usePatients();
+  const {
+    treatments,
+    loading: treatmentsLoading,
+    create: createTreatment,
+    update: updateTreatment,
+    remove: removeTreatment,
+  } = useTreatments();
   const [doctor, setDoctor] = useState<ProfileDoctor>(() =>
     user ? userToDoctor(user) : userToDoctor({ email: '', fullName: null })
   );
   const [isEditing, setIsEditing] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [treatmentDialogOpen, setTreatmentDialogOpen] = useState(false);
+  const [editingTreatment, setEditingTreatment] = useState<{
+    id: string;
+    name: string;
+    price_cents: number;
+  } | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -271,7 +290,7 @@ export function ProfilePage() {
 
       <main className="mx-auto max-w-5xl px-4 py-8">
         <Tabs defaultValue="profile" className="space-y-8 flex flex-col">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="profile" className="gap-2">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Perfil</span>
@@ -279,6 +298,10 @@ export function ProfilePage() {
             <TabsTrigger value="schedule" className="gap-2">
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">Horarios</span>
+            </TabsTrigger>
+            <TabsTrigger value="treatments" className="gap-2">
+              <Syringe className="h-4 w-4" />
+              <span className="hidden sm:inline">Tratamientos</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="gap-2">
               <Shield className="h-4 w-4" />
@@ -710,6 +733,113 @@ export function ProfilePage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="treatments" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Syringe className="h-5 w-5 text-muted-foreground" />
+                      Catálogo de tratamientos
+                    </CardTitle>
+                    <CardDescription>
+                      Define tratamientos y precios para asignar a los turnos
+                    </CardDescription>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setEditingTreatment(null);
+                      setTreatmentDialogOpen(true);
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nuevo
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {treatmentsLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Cargando tratamientos...
+                  </p>
+                ) : treatments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No hay tratamientos. Crea uno para usarlo en los turnos.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {treatments.map((t) => (
+                      <div
+                        key={t.id}
+                        className="flex items-center justify-between rounded-lg border px-4 py-3"
+                      >
+                        <div>
+                          <p className="font-medium">{t.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(t.price_cents / 100).toFixed(2)} por sesión
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => {
+                              setEditingTreatment({
+                                id: t.id,
+                                name: t.name,
+                                price_cents: t.price_cents,
+                              });
+                              setTreatmentDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Editar</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => removeTreatment(t.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Eliminar</span>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            <TreatmentFormDialog
+              open={treatmentDialogOpen}
+              onOpenChange={(open) => {
+                setTreatmentDialogOpen(open);
+                if (!open) setEditingTreatment(null);
+              }}
+              treatment={
+                editingTreatment
+                  ? {
+                      id: editingTreatment.id,
+                      tenant_id: '',
+                      name: editingTreatment.name,
+                      price_cents: editingTreatment.price_cents,
+                      created_at: null,
+                      updated_at: null,
+                    }
+                  : null
+              }
+              onSubmit={async (data) => {
+                if (editingTreatment) {
+                  await updateTreatment(editingTreatment.id, data);
+                } else {
+                  await createTreatment(data);
+                }
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
