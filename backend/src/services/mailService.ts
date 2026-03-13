@@ -54,12 +54,12 @@ async function send(
 
 /**
  * Generates an ICS calendar attachment from appointment data.
- * 
+ *
  * Creates an RFC 5545-compliant iCalendar file that can be attached to emails.
  * Handles both regular appointments and cancellations.
- * 
+ *
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5
- * 
+ *
  * @param appointmentId - Unique identifier for the appointment
  * @param patientEmail - Patient's email address
  * @param data - Appointment email data
@@ -92,7 +92,11 @@ function generateICSAttachment(
       type: 'text/calendar',
     };
   } catch (err) {
-    logger.error({ err }, 'Failed to generate ICS attachment for appointment %s', appointmentId);
+    logger.error(
+      { err },
+      'Failed to generate ICS attachment for appointment %s',
+      appointmentId
+    );
     return null;
   }
 }

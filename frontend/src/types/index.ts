@@ -88,9 +88,49 @@ export interface AppointmentWithSession {
   recommendations?: string | null;
 }
 
+export interface MedicalCondition {
+  id: string;
+  tenant_id: string;
+  patient_id: string;
+  condition_name: string;
+  diagnosed_date: string | null;
+  notes: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface Medication {
+  id: string;
+  tenant_id: string;
+  patient_id: string;
+  medication_name: string;
+  dosage: string | null;
+  notes: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface Allergy {
+  id: string;
+  tenant_id: string;
+  patient_id: string;
+  allergen_name: string;
+  allergy_type: 'medication' | 'food' | 'other';
+  notes: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface MedicalHistory {
+  conditions: MedicalCondition[];
+  medications: Medication[];
+  allergies: Allergy[];
+}
+
 export interface PatientDetail {
   patient: Patient;
   appointments: AppointmentWithSession[];
+  medical_history: MedicalHistory;
 }
 
 export interface AppointmentDetail extends Appointment {

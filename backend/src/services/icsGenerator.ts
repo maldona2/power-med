@@ -1,13 +1,17 @@
 /**
  * ICS Generator Module
- * 
+ *
  * Generates RFC 5545-compliant iCalendar data for appointment events.
  * Provides UID generation with deterministic format based on appointment ID.
- * 
+ *
  * Requirements: 1.1, 1.2, 4.1, 4.2, 4.3
  */
 
-import { formatUTCTimestamp, formatICSTimestamp, escapeICSText } from './icsFormatter.js';
+import {
+  formatUTCTimestamp,
+  formatICSTimestamp,
+  escapeICSText,
+} from './icsFormatter.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -70,18 +74,18 @@ export interface ICSGeneratorOptions {
 
 /**
  * Generates a deterministic UID for an appointment event.
- * 
+ *
  * The UID format follows RFC 5545 requirements and ensures:
  * - Uniqueness: Different appointment IDs produce different UIDs
  * - Determinism: Same appointment ID always produces the same UID
  * - RFC compliance: Includes domain portion for global uniqueness
- * 
+ *
  * Format: appointment-{appointmentId}@anamnesia.pro
- * 
+ *
  * Requirement 4.1: Generate a unique UID for each appointment event
  * Requirement 4.2: Use a deterministic UID format based on appointment ID and system domain
  * Requirement 4.3: Use the same UID value for all emails related to the same appointment
- * 
+ *
  * @param appointmentId - The unique identifier for the appointment (UUID format)
  * @returns The generated UID string
  * @throws {Error} If appointmentId is empty or invalid
@@ -89,22 +93,32 @@ export interface ICSGeneratorOptions {
 export function generateUID(appointmentId: string): string {
   // Validate input
   if (!appointmentId || typeof appointmentId !== 'string') {
-    logger.error({ appointmentId }, 'Invalid appointment ID: must be a non-empty string');
+    logger.error(
+      { appointmentId },
+      'Invalid appointment ID: must be a non-empty string'
+    );
     throw new Error('Invalid appointment ID: must be a non-empty string');
   }
 
   // Trim whitespace
   const trimmedId = appointmentId.trim();
-  
+
   if (trimmedId.length === 0) {
-    logger.error({ appointmentId }, 'Invalid appointment ID: must not be empty or whitespace');
+    logger.error(
+      { appointmentId },
+      'Invalid appointment ID: must not be empty or whitespace'
+    );
     throw new Error('Invalid appointment ID: must not be empty or whitespace');
   }
 
   // Validate UUID format (basic check for UUID v4 pattern)
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidPattern.test(trimmedId)) {
-    logger.error({ appointmentId: trimmedId }, 'Invalid appointment ID: must be a valid UUID format');
+    logger.error(
+      { appointmentId: trimmedId },
+      'Invalid appointment ID: must be a valid UUID format'
+    );
     throw new Error('Invalid appointment ID: must be a valid UUID format');
   }
 
@@ -114,20 +128,20 @@ export function generateUID(appointmentId: string): string {
 
 /**
  * Generates RFC 5545-compliant iCalendar data for an appointment.
- * 
+ *
  * This is the main entry point for ICS generation. It takes appointment data
  * and produces a complete ICS file string that can be attached to emails.
- * 
+ *
  * The generated ICS includes:
  * - VCALENDAR wrapper with version and product information
  * - VTIMEZONE component for America/Argentina/Buenos_Aires
  * - VEVENT component with all appointment details
  * - Proper formatting (CRLF line breaks, line folding, character escaping)
- * 
+ *
  * Requirement 1.1: Generate valid iCalendar format data conforming to RFC 5545
  * Requirement 1.2: Include VEVENT component with required fields
  * Requirement 1.3: Include VTIMEZONE component for America/Argentina/Buenos_Aires
- * 
+ *
  * @param options - Appointment data and generation options
  * @returns Complete ICS file content as a string
  * @throws {Error} If required fields are missing or invalid
@@ -143,11 +157,17 @@ export function generateICS(options: ICSGeneratorOptions): string {
     throw new Error('Missing or invalid required field: scheduledAt');
   }
   if (isNaN(options.scheduledAt.getTime())) {
-    logger.error({ options }, 'Invalid date: scheduledAt is not a valid Date object');
+    logger.error(
+      { options },
+      'Invalid date: scheduledAt is not a valid Date object'
+    );
     throw new Error('Invalid date: scheduledAt is not a valid Date object');
   }
   if (!options.durationMinutes || options.durationMinutes <= 0) {
-    logger.error({ options }, 'Missing or invalid required field: durationMinutes');
+    logger.error(
+      { options },
+      'Missing or invalid required field: durationMinutes'
+    );
     throw new Error('Missing or invalid required field: durationMinutes');
   }
   if (!options.patientEmail) {
@@ -158,7 +178,10 @@ export function generateICS(options: ICSGeneratorOptions): string {
   // Log warnings for edge cases
   if (options.durationMinutes > 1440) {
     logger.warn(
-      { appointmentId: options.appointmentId, durationMinutes: options.durationMinutes },
+      {
+        appointmentId: options.appointmentId,
+        durationMinutes: options.durationMinutes,
+      },
       'Duration exceeds 24 hours'
     );
   }
@@ -181,10 +204,10 @@ export function generateICS(options: ICSGeneratorOptions): string {
   let processedNotes = options.notes;
   if (processedNotes && processedNotes.length > MAX_NOTES_LENGTH) {
     logger.warn(
-      { 
-        appointmentId: options.appointmentId, 
+      {
+        appointmentId: options.appointmentId,
         originalLength: processedNotes.length,
-        truncatedLength: MAX_NOTES_LENGTH 
+        truncatedLength: MAX_NOTES_LENGTH,
       },
       'Notes exceed maximum length, truncating'
     );
@@ -226,11 +249,16 @@ export function generateICS(options: ICSGeneratorOptions): string {
   lines.push(`DTSTAMP:${dtstamp}`);
 
   // Calculate and format DTSTART with TZID parameter
-  const dtstart = formatICSTimestamp(options.scheduledAt, 'America/Argentina/Buenos_Aires');
+  const dtstart = formatICSTimestamp(
+    options.scheduledAt,
+    'America/Argentina/Buenos_Aires'
+  );
   lines.push(`DTSTART;TZID=America/Argentina/Buenos_Aires:${dtstart}`);
 
   // Calculate DTEND from start time and duration
-  const endTime = new Date(options.scheduledAt.getTime() + options.durationMinutes * 60 * 1000);
+  const endTime = new Date(
+    options.scheduledAt.getTime() + options.durationMinutes * 60 * 1000
+  );
   const dtend = formatICSTimestamp(endTime, 'America/Argentina/Buenos_Aires');
   lines.push(`DTEND;TZID=America/Argentina/Buenos_Aires:${dtend}`);
 
@@ -240,7 +268,11 @@ export function generateICS(options: ICSGeneratorOptions): string {
   lines.push(`SUMMARY:${summary}`);
 
   // Add DESCRIPTION field if notes exist and are non-null (Requirement 7.2)
-  if (processedNotes !== null && processedNotes !== undefined && processedNotes.trim() !== '') {
+  if (
+    processedNotes !== null &&
+    processedNotes !== undefined &&
+    processedNotes.trim() !== ''
+  ) {
     const escapedNotes = escapeICSText(processedNotes);
     lines.push(`DESCRIPTION:${escapedNotes}`);
   }
@@ -252,7 +284,9 @@ export function generateICS(options: ICSGeneratorOptions): string {
   // Generate ATTENDEE with patient name and email
   const patientName = options.patientName || 'Unknown';
   const attendeeName = escapeICSText(patientName);
-  lines.push(`ATTENDEE;CN=${attendeeName};RSVP=FALSE:mailto:${options.patientEmail}`);
+  lines.push(
+    `ATTENDEE;CN=${attendeeName};RSVP=FALSE:mailto:${options.patientEmail}`
+  );
 
   // Set STATUS to CONFIRMED for active appointments
   const status = options.isCancellation ? 'CANCELLED' : 'CONFIRMED';

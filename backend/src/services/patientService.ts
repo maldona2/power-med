@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { db, patients, appointments, sessions } from '../db/client.js';
+import * as medicalHistoryService from './medicalHistoryService.js';
 
 export interface PatientRow {
   id: string;
@@ -116,6 +117,11 @@ export async function getById(
 ): Promise<{
   patient: PatientRow;
   appointments: AppointmentWithSession[];
+  medical_history: {
+    conditions: medicalHistoryService.MedicalConditionRow[];
+    medications: medicalHistoryService.MedicationRow[];
+    allergies: medicalHistoryService.AllergyRow[];
+  };
 } | null> {
   const [patient] = await db
     .select()
@@ -125,20 +131,26 @@ export async function getById(
 
   if (!patient) return null;
 
-  const apptRows = await db
-    .select({
-      id: appointments.id,
-      scheduled_at: appointments.scheduledAt,
-      status: appointments.status,
-      procedures_performed: sessions.proceduresPerformed,
-      recommendations: sessions.recommendations,
-    })
-    .from(appointments)
-    .leftJoin(sessions, eq(sessions.appointmentId, appointments.id))
-    .where(
-      and(eq(appointments.patientId, id), eq(appointments.tenantId, tenantId))
-    )
-    .orderBy(desc(appointments.scheduledAt));
+  // Fetch appointments and medical history in parallel
+  const [apptRows, conditions, medications, allergies] = await Promise.all([
+    db
+      .select({
+        id: appointments.id,
+        scheduled_at: appointments.scheduledAt,
+        status: appointments.status,
+        procedures_performed: sessions.proceduresPerformed,
+        recommendations: sessions.recommendations,
+      })
+      .from(appointments)
+      .leftJoin(sessions, eq(sessions.appointmentId, appointments.id))
+      .where(
+        and(eq(appointments.patientId, id), eq(appointments.tenantId, tenantId))
+      )
+      .orderBy(desc(appointments.scheduledAt)),
+    medicalHistoryService.listConditions(tenantId, id),
+    medicalHistoryService.listMedications(tenantId, id),
+    medicalHistoryService.listAllergies(tenantId, id),
+  ]);
 
   return {
     patient: toRow(patient),
@@ -149,6 +161,11 @@ export async function getById(
       procedures_performed: r.procedures_performed ?? null,
       recommendations: r.recommendations ?? null,
     })),
+    medical_history: {
+      conditions,
+      medications,
+      allergies,
+    },
   };
 }
 

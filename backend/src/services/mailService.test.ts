@@ -1,5 +1,10 @@
 import type { EmailAttachment } from './mailService.js';
-import { sendAppointmentBooked, sendAppointmentConfirmed, sendAppointmentCancelled, sendAppointmentReminder } from './mailService.js';
+import {
+  sendAppointmentBooked,
+  sendAppointmentConfirmed,
+  sendAppointmentCancelled,
+  sendAppointmentReminder,
+} from './mailService.js';
 import * as icsGenerator from './icsGenerator.js';
 
 // Mock the dependencies
@@ -78,7 +83,7 @@ describe('mailService - ICS Integration', () => {
     // These calls should compile without errors
     // They won't actually send emails because RESEND_API_KEY is not set
     const appointmentId = '123e4567-e89b-12d3-a456-426614174000';
-    
+
     // Just verify the imports and types are correct
     expect(typeof appointmentId).toBe('string');
     expect(mockData.patientName).toBe('Test Patient');
@@ -128,7 +133,11 @@ describe('mailService - Graceful Degradation', () => {
     });
 
     expect(() => {
-      sendAppointmentConfirmed(mockEmail, mockAppointmentData, mockAppointmentId);
+      sendAppointmentConfirmed(
+        mockEmail,
+        mockAppointmentData,
+        mockAppointmentId
+      );
     }).not.toThrow();
 
     expect(mockLoggerError).toHaveBeenCalledWith(
@@ -144,7 +153,11 @@ describe('mailService - Graceful Degradation', () => {
     });
 
     expect(() => {
-      sendAppointmentCancelled(mockEmail, mockAppointmentData, mockAppointmentId);
+      sendAppointmentCancelled(
+        mockEmail,
+        mockAppointmentData,
+        mockAppointmentId
+      );
     }).not.toThrow();
 
     expect(mockLoggerError).toHaveBeenCalledWith(
@@ -160,7 +173,11 @@ describe('mailService - Graceful Degradation', () => {
     });
 
     expect(() => {
-      sendAppointmentReminder(mockEmail, mockAppointmentData, mockAppointmentId);
+      sendAppointmentReminder(
+        mockEmail,
+        mockAppointmentData,
+        mockAppointmentId
+      );
     }).not.toThrow();
 
     expect(mockLoggerError).toHaveBeenCalledWith(

@@ -1,6 +1,6 @@
 /**
  * Tests for ICS Parser Utility
- * 
+ *
  * Validates that the parser can correctly extract event data from ICS files.
  * These tests ensure the parser works correctly for round-trip validation.
  */
@@ -74,8 +74,12 @@ describe('icsParser', () => {
 
       const result = parseICS(ics);
 
-      expect(result.startTime).toEqual(new Date(Date.UTC(2024, 2, 15, 14, 30, 0)));
-      expect(result.endTime).toEqual(new Date(Date.UTC(2024, 2, 15, 15, 30, 0)));
+      expect(result.startTime).toEqual(
+        new Date(Date.UTC(2024, 2, 15, 14, 30, 0))
+      );
+      expect(result.endTime).toEqual(
+        new Date(Date.UTC(2024, 2, 15, 15, 30, 0))
+      );
       expect(result.durationMinutes).toBe(60);
     });
 
@@ -208,7 +212,7 @@ describe('icsParser', () => {
 
       expect(result.summary).toBe(
         'This is a very long summary that has been folded across multiple' +
-        'lines according to RFC 5545 specifications'
+          'lines according to RFC 5545 specifications'
       );
     });
 
@@ -386,7 +390,9 @@ describe('icsParser', () => {
 
       const result = parseICS(ics);
 
-      expect(result.uid).toBe('appointment-550e8400-e29b-41d4-a716-446655440000@anamnesia.pro');
+      expect(result.uid).toBe(
+        'appointment-550e8400-e29b-41d4-a716-446655440000@anamnesia.pro'
+      );
       expect(result.summary).toBe('Dr. María González - Consulta');
       expect(result.description).toBe('Patient has allergies to penicillin');
       expect(result.organizerName).toBe('Dr. María González');

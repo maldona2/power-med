@@ -222,6 +222,97 @@ export const sessions = pgTable(
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 
+// ─── medical_conditions ──────────────────────────────────────────────────────
+
+export const medicalConditions = pgTable(
+  'medical_conditions',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    patientId: uuid('patient_id')
+      .notNull()
+      .references(() => patients.id, { onDelete: 'cascade' }),
+    conditionName: text('condition_name').notNull(),
+    diagnosedDate: text('diagnosed_date'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index('idx_medical_conditions_tenant').on(table.tenantId),
+    index('idx_medical_conditions_patient').on(table.patientId),
+  ]
+);
+
+export type MedicalCondition = typeof medicalConditions.$inferSelect;
+export type NewMedicalCondition = typeof medicalConditions.$inferInsert;
+
+// ─── medications ─────────────────────────────────────────────────────────────
+
+export const medications = pgTable(
+  'medications',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    patientId: uuid('patient_id')
+      .notNull()
+      .references(() => patients.id, { onDelete: 'cascade' }),
+    medicationName: text('medication_name').notNull(),
+    dosage: text('dosage'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index('idx_medications_tenant').on(table.tenantId),
+    index('idx_medications_patient').on(table.patientId),
+  ]
+);
+
+export type Medication = typeof medications.$inferSelect;
+export type NewMedication = typeof medications.$inferInsert;
+
+// ─── allergies ───────────────────────────────────────────────────────────────
+
+export const allergies = pgTable(
+  'allergies',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    patientId: uuid('patient_id')
+      .notNull()
+      .references(() => patients.id, { onDelete: 'cascade' }),
+    allergenName: text('allergen_name').notNull(),
+    allergyType: text('allergy_type', {
+      enum: ['medication', 'food', 'other'],
+    })
+      .notNull()
+      .default('other'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index('idx_allergies_tenant').on(table.tenantId),
+    index('idx_allergies_patient').on(table.patientId),
+  ]
+);
+
+export type Allergy = typeof allergies.$inferSelect;
+export type NewAllergy = typeof allergies.$inferInsert;
+
 // ─── relations ───────────────────────────────────────────────────────────────
 
 export const tenantsRelations = relations(tenants, ({ many }) => ({
@@ -230,6 +321,9 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   appointments: many(appointments),
   treatments: many(treatments),
   sessions: many(sessions),
+  medicalConditions: many(medicalConditions),
+  medications: many(medications),
+  allergies: many(allergies),
 }));
 
 export const usersRelations = relations(users, ({ one }) => ({
@@ -246,6 +340,9 @@ export const patientsRelations = relations(patients, ({ one, many }) => ({
   }),
   appointments: many(appointments),
   sessions: many(sessions),
+  medicalConditions: many(medicalConditions),
+  medications: many(medications),
+  allergies: many(allergies),
 }));
 
 export const appointmentsRelations = relations(
@@ -296,6 +393,42 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
   }),
   patient: one(patients, {
     fields: [sessions.patientId],
+    references: [patients.id],
+  }),
+}));
+
+export const medicalConditionsRelations = relations(
+  medicalConditions,
+  ({ one }) => ({
+    tenant: one(tenants, {
+      fields: [medicalConditions.tenantId],
+      references: [tenants.id],
+    }),
+    patient: one(patients, {
+      fields: [medicalConditions.patientId],
+      references: [patients.id],
+    }),
+  })
+);
+
+export const medicationsRelations = relations(medications, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [medications.tenantId],
+    references: [tenants.id],
+  }),
+  patient: one(patients, {
+    fields: [medications.patientId],
+    references: [patients.id],
+  }),
+}));
+
+export const allergiesRelations = relations(allergies, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [allergies.tenantId],
+    references: [tenants.id],
+  }),
+  patient: one(patients, {
+    fields: [allergies.patientId],
     references: [patients.id],
   }),
 }));

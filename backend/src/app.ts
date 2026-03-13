@@ -53,10 +53,16 @@ import patientsRoutes from './routes/patients.js';
 import appointmentsRoutes from './routes/appointments.js';
 import sessionsRoutes from './routes/sessions.js';
 import treatmentsRoutes from './routes/treatments.js';
+import medicalConditionsRoutes from './routes/medicalConditions.js';
+import medicationsRoutes from './routes/medications.js';
+import allergiesRoutes from './routes/allergies.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/patients', patientsRoutes);
+app.use('/api/patients', medicalConditionsRoutes);
+app.use('/api/patients', medicationsRoutes);
+app.use('/api/patients', allergiesRoutes);
 app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/treatments', treatmentsRoutes);
 app.use('/api/sessions', sessionsRoutes);

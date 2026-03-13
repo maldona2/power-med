@@ -16,9 +16,11 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { PatientFormDialog } from '@/components/patients/PatientFormDialog';
+import { MedicalHistoryDialog } from '@/components/patients/MedicalHistoryDialog';
 import { emptyForm, NewAppointmentSheet } from '@/components/appointments';
 import type { PatientFormData } from '@/hooks/usePatients';
 import type { AppointmentFormData } from '@/hooks/useAppointments';
+import type { MedicalCondition, Medication, Allergy } from '@/types';
 import {
   Pencil,
   Plus,
@@ -31,6 +33,10 @@ import {
   FileText,
   Clock,
   User,
+  Heart,
+  Pill,
+  AlertTriangle,
+  Trash2,
 } from 'lucide-react';
 
 const statusConfig: Record<
@@ -67,6 +73,15 @@ export function PatientDetailPage() {
   const [form, setForm] = useState<AppointmentFormData>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
 
+  // Medical history state
+  const [medicalDialogOpen, setMedicalDialogOpen] = useState(false);
+  const [medicalDialogType, setMedicalDialogType] = useState<
+    'condition' | 'medication' | 'allergy'
+  >('condition');
+  const [editingMedicalItem, setEditingMedicalItem] = useState<
+    MedicalCondition | Medication | Allergy | null
+  >(null);
+
   const openNewAppointment = () => {
     setForm({
       ...emptyForm,
@@ -74,6 +89,54 @@ export function PatientDetailPage() {
       date: new Date(),
     });
     setAppointmentSheetOpen(true);
+  };
+
+  const openMedicalDialog = (
+    type: 'condition' | 'medication' | 'allergy',
+    item?: any
+  ) => {
+    setMedicalDialogType(type);
+    setEditingMedicalItem(item || null);
+    setMedicalDialogOpen(true);
+  };
+
+  const handleMedicalSubmit = async (data: any) => {
+    if (!id) return;
+
+    const endpoints = {
+      condition: 'conditions',
+      medication: 'medications',
+      allergy: 'allergies',
+    };
+
+    const endpoint = `/patients/${id}/${endpoints[medicalDialogType]}`;
+
+    if (editingMedicalItem) {
+      await api.put(`${endpoint}/${editingMedicalItem.id}`, data);
+      toast.success('Actualizado correctamente');
+    } else {
+      await api.post(endpoint, data);
+      toast.success('Agregado correctamente');
+    }
+
+    refetch();
+  };
+
+  const handleMedicalDelete = async (
+    type: 'condition' | 'medication' | 'allergy',
+    itemId: string
+  ) => {
+    if (!id || !confirm('¿Estás seguro de eliminar este registro?')) return;
+
+    const endpoints = {
+      condition: 'conditions',
+      medication: 'medications',
+      allergy: 'allergies',
+    };
+
+    await api.delete(`/patients/${id}/${endpoints[type]}/${itemId}`);
+    toast.success('Eliminado correctamente');
+    refetch();
   };
 
   const handleEditSubmit = async (data: PatientFormData) => {
@@ -158,7 +221,7 @@ export function PatientDetailPage() {
     );
   }
 
-  const { patient, appointments } = detail;
+  const { patient, appointments, medical_history } = detail;
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 px-4 py-6">
@@ -204,14 +267,31 @@ export function PatientDetailPage() {
 
       {/* Main Content */}
       <Tabs defaultValue="ficha" className="space-y-6 flex flex-col">
-        <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-grid">
+        <TabsList className="grid w-full grid-cols-3 sm:w-auto sm:inline-grid">
           <TabsTrigger value="ficha" className="gap-2">
             <User className="h-4 w-4" />
             Información
           </TabsTrigger>
+          <TabsTrigger value="historial-medico" className="gap-2">
+            <Heart className="h-4 w-4" />
+            Historial médico
+            {medical_history.conditions.length +
+              medical_history.medications.length +
+              medical_history.allergies.length >
+              0 && (
+              <Badge
+                variant="secondary"
+                className="ml-1 h-5 min-w-5 rounded-full px-1.5 text-xs"
+              >
+                {medical_history.conditions.length +
+                  medical_history.medications.length +
+                  medical_history.allergies.length}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="historial" className="gap-2">
             <CalendarDays className="h-4 w-4" />
-            Historial
+            Citas
             {appointments.length > 0 && (
               <Badge
                 variant="secondary"
@@ -277,6 +357,229 @@ export function PatientDetailPage() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="historial-medico" className="mt-6 space-y-6">
+          {/* Conditions */}
+          <Card className="overflow-hidden border-0 shadow-sm">
+            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base font-medium">
+                  <Heart className="h-4 w-4 text-muted-foreground" />
+                  Condiciones médicas
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openMedicalDialog('condition')}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Agregar
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {medical_history.conditions.length === 0 ? (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  Sin condiciones registradas
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {medical_history.conditions.map((condition) => (
+                    <div
+                      key={condition.id}
+                      className="flex items-start gap-4 p-4"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">
+                          {condition.condition_name}
+                        </p>
+                        {condition.diagnosed_date && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Diagnosticado:{' '}
+                            {new Date(
+                              condition.diagnosed_date
+                            ).toLocaleDateString('es-AR')}
+                          </p>
+                        )}
+                        {condition.notes && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {condition.notes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            openMedicalDialog('condition', condition)
+                          }
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            handleMedicalDelete('condition', condition.id)
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Medications */}
+          <Card className="overflow-hidden border-0 shadow-sm">
+            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base font-medium">
+                  <Pill className="h-4 w-4 text-muted-foreground" />
+                  Medicamentos
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openMedicalDialog('medication')}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Agregar
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {medical_history.medications.length === 0 ? (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  Sin medicamentos registrados
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {medical_history.medications.map((medication) => (
+                    <div
+                      key={medication.id}
+                      className="flex items-start gap-4 p-4"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">
+                          {medication.medication_name}
+                        </p>
+                        {medication.dosage && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Dosis: {medication.dosage}
+                          </p>
+                        )}
+                        {medication.notes && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {medication.notes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            openMedicalDialog('medication', medication)
+                          }
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            handleMedicalDelete('medication', medication.id)
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Allergies */}
+          <Card className="overflow-hidden border-0 shadow-sm">
+            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base font-medium">
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  Alergias
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openMedicalDialog('allergy')}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Agregar
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {medical_history.allergies.length === 0 ? (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  Sin alergias registradas
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {medical_history.allergies.map((allergy) => (
+                    <div
+                      key={allergy.id}
+                      className="flex items-start gap-4 p-4"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{allergy.allergen_name}</p>
+                          <Badge variant="outline" className="text-xs">
+                            {allergy.allergy_type === 'medication' &&
+                              'Medicamento'}
+                            {allergy.allergy_type === 'food' && 'Alimento'}
+                            {allergy.allergy_type === 'other' && 'Otro'}
+                          </Badge>
+                        </div>
+                        {allergy.notes && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {allergy.notes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => openMedicalDialog('allergy', allergy)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            handleMedicalDelete('allergy', allergy.id)
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="historial" className="mt-6">
@@ -357,6 +660,14 @@ export function PatientDetailPage() {
         onOpenChange={setEditDialogOpen}
         patient={patient}
         onSubmit={handleEditSubmit}
+      />
+
+      <MedicalHistoryDialog
+        open={medicalDialogOpen}
+        onOpenChange={setMedicalDialogOpen}
+        type={medicalDialogType}
+        item={editingMedicalItem}
+        onSubmit={handleMedicalSubmit}
       />
 
       <Sheet open={appointmentSheetOpen} onOpenChange={setAppointmentSheetOpen}>

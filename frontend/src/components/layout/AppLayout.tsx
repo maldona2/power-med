@@ -3,6 +3,7 @@ import { Calendar, Users } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardShell } from './DashboardShell';
+import { useAppointmentNotifications } from '@/hooks/useAppointmentNotifications';
 
 const SIDEBAR_ITEMS = [
   { to: '/app/appointments', label: 'Turnos', icon: Calendar },
@@ -11,6 +12,7 @@ const SIDEBAR_ITEMS = [
 
 export function AppLayout() {
   const { user, logout } = useAuth();
+  useAppointmentNotifications();
 
   return (
     <DashboardShell

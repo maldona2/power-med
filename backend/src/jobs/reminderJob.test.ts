@@ -30,9 +30,7 @@ const mockAppointmentRows = [
   },
 ];
 
-const mockProfessionalRows = [
-  { tenantId: 'tenant-1', fullName: 'Dr. García' },
-];
+const mockProfessionalRows = [{ tenantId: 'tenant-1', fullName: 'Dr. García' }];
 
 let fromCallCount = 0;
 

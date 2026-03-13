@@ -1,13 +1,13 @@
 /**
  * ICS Parser Utility for Testing
- * 
+ *
  * Provides basic parsing functionality for ICS (iCalendar) files to support
  * round-trip validation in tests. This parser extracts key fields from VEVENT
  * components to verify that generated ICS data can be parsed back correctly.
- * 
+ *
  * Note: This is a simplified parser designed for testing purposes only.
  * It does not implement full RFC 5545 parsing capabilities.
- * 
+ *
  * Requirements: 5.5
  */
 
@@ -44,13 +44,13 @@ export interface ParsedICSEvent {
 
 /**
  * Unescapes ICS text by converting escaped sequences back to their original characters.
- * 
+ *
  * Handles the following escape sequences per RFC 5545:
  * - \\n → newline
  * - \\, → comma
  * - \\; → semicolon
  * - \\\\ → backslash
- * 
+ *
  * @param text - The escaped ICS text
  * @returns The unescaped text
  */
@@ -64,10 +64,10 @@ function unescapeICSText(text: string): string {
 
 /**
  * Unfolds ICS lines by removing continuation line breaks.
- * 
+ *
  * Per RFC 5545, long lines are folded by inserting CRLF followed by a space.
  * This function reverses that process by removing CRLF+space sequences.
- * 
+ *
  * @param icsContent - The raw ICS content with folded lines
  * @returns The unfolded content
  */
@@ -78,11 +78,11 @@ function unfoldLines(icsContent: string): string {
 
 /**
  * Parses an ICS timestamp string into a Date object.
- * 
+ *
  * Supports two formats:
  * - UTC format: YYYYMMDDTHHmmssZ
  * - Local format: YYYYMMDDTHHmmss
- * 
+ *
  * @param timestamp - The ICS timestamp string
  * @param isUTC - Whether the timestamp is in UTC format (default: false)
  * @returns The parsed Date object
@@ -105,13 +105,13 @@ function parseICSTimestamp(timestamp: string, isUTC: boolean = false): Date {
 
 /**
  * Extracts the value from a CN (Common Name) parameter.
- * 
+ *
  * Example: "CN=Dr. Smith;RSVP=FALSE" → "Dr. Smith"
- * 
+ *
  * Note: The CN value may contain escaped semicolons (\;) which should not
  * be treated as parameter separators. We need to match until we find an
  * unescaped semicolon or colon.
- * 
+ *
  * @param line - The ICS line containing CN parameter
  * @returns The extracted CN value, or empty string if not found
  */
@@ -127,9 +127,9 @@ function extractCN(line: string): string {
 
 /**
  * Extracts the email address from an ATTENDEE line.
- * 
+ *
  * Example: "ATTENDEE;CN=John;RSVP=FALSE:mailto:john@example.com" → "john@example.com"
- * 
+ *
  * @param line - The ATTENDEE line
  * @returns The extracted email address, or empty string if not found
  */
@@ -143,14 +143,14 @@ function extractEmail(line: string): string {
 
 /**
  * Parses an ICS file and extracts event data from the VEVENT component.
- * 
+ *
  * This parser handles:
  * - Line unfolding (CRLF + space continuation)
  * - Special character unescaping
  * - Timestamp parsing (UTC and local formats)
  * - VEVENT field extraction
  * - Duration calculation
- * 
+ *
  * @param icsContent - The complete ICS file content as a string
  * @returns Parsed event data structure
  * @throws {Error} If the ICS content is invalid or missing required fields
@@ -158,7 +158,7 @@ function extractEmail(line: string): string {
 export function parseICS(icsContent: string): ParsedICSEvent {
   // Unfold lines first
   const unfolded = unfoldLines(icsContent);
-  
+
   // Split into lines
   const lines = unfolded.split(/\r\n/);
 
@@ -203,12 +203,15 @@ export function parseICS(icsContent: string): ParsedICSEvent {
       if (tzidMatch) {
         result.timezone = tzidMatch[1];
       }
-      
+
       // Extract timestamp
       const timestampMatch = line.match(/:(\d{8}T\d{6}Z?)/);
       if (timestampMatch) {
         const timestamp = timestampMatch[1];
-        result.startTime = parseICSTimestamp(timestamp, timestamp.endsWith('Z'));
+        result.startTime = parseICSTimestamp(
+          timestamp,
+          timestamp.endsWith('Z')
+        );
       }
     } else if (line.startsWith('DTEND')) {
       // Extract timestamp

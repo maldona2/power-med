@@ -56,20 +56,29 @@ export async function sendReminders(): Promise<void> {
         )
       );
 
-    const profByTenant = new Map(professionals.map((p) => [p.tenantId, p.fullName]));
+    const profByTenant = new Map(
+      professionals.map((p) => [p.tenantId, p.fullName])
+    );
 
     for (const row of rows) {
       if (!row.patientEmail) continue;
 
-      sendAppointmentReminder(row.patientEmail, {
-        patientName: `${row.patientFirstName} ${row.patientLastName}`,
-        professionalName: profByTenant.get(row.tenantId) ?? 'El profesional',
-        scheduledAt: row.scheduledAt ?? new Date(),
-        durationMinutes: row.durationMinutes ?? 60,
-      }, row.appointmentId);
+      sendAppointmentReminder(
+        row.patientEmail,
+        {
+          patientName: `${row.patientFirstName} ${row.patientLastName}`,
+          professionalName: profByTenant.get(row.tenantId) ?? 'El profesional',
+          scheduledAt: row.scheduledAt ?? new Date(),
+          durationMinutes: row.durationMinutes ?? 60,
+        },
+        row.appointmentId
+      );
     }
 
-    logger.info('Reminder job: sent reminders for %d appointments', rows.length);
+    logger.info(
+      'Reminder job: sent reminders for %d appointments',
+      rows.length
+    );
   } catch (err) {
     logger.error({ err }, 'Reminder job failed');
   }

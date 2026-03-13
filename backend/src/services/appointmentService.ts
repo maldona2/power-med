@@ -238,7 +238,11 @@ async function getEmailContext(
   durationMinutes: number | null
 ) {
   const [patient] = await db
-    .select({ email: patients.email, firstName: patients.firstName, lastName: patients.lastName })
+    .select({
+      email: patients.email,
+      firstName: patients.firstName,
+      lastName: patients.lastName,
+    })
     .from(patients)
     .where(eq(patients.id, patientId))
     .limit(1);
@@ -251,7 +255,9 @@ async function getEmailContext(
 
   return {
     patientEmail: patient?.email ?? null,
-    patientName: patient ? `${patient.firstName} ${patient.lastName}` : 'Paciente',
+    patientName: patient
+      ? `${patient.firstName} ${patient.lastName}`
+      : 'Paciente',
     professionalName: professional?.fullName ?? 'El profesional',
     scheduledAt: scheduledAt ?? new Date(),
     durationMinutes: durationMinutes ?? 60,
@@ -304,19 +310,26 @@ export async function create(
   const result = toRow(row);
 
   // fire-and-forget email
-  void getEmailContext(tenantId, input.patient_id, row.scheduledAt, row.durationMinutes).then(
-    (ctx) => {
-      if (ctx.patientEmail) {
-        sendAppointmentBooked(ctx.patientEmail, {
+  void getEmailContext(
+    tenantId,
+    input.patient_id,
+    row.scheduledAt,
+    row.durationMinutes
+  ).then((ctx) => {
+    if (ctx.patientEmail) {
+      sendAppointmentBooked(
+        ctx.patientEmail,
+        {
           patientName: ctx.patientName,
           professionalName: ctx.professionalName,
           scheduledAt: ctx.scheduledAt,
           durationMinutes: ctx.durationMinutes,
           notes: input.notes ?? null,
-        }, row.id);
-      }
+        },
+        row.id
+      );
     }
-  );
+  });
 
   return result;
 }
@@ -376,22 +389,25 @@ export async function update(
 
   // fire-and-forget email on status changes that patients care about
   if (data.status === 'confirmed' || data.status === 'cancelled') {
-    void getEmailContext(tenantId, row.patientId, row.scheduledAt, row.durationMinutes).then(
-      (ctx) => {
-        if (!ctx.patientEmail) return;
-        const emailData = {
-          patientName: ctx.patientName,
-          professionalName: ctx.professionalName,
-          scheduledAt: ctx.scheduledAt,
-          durationMinutes: ctx.durationMinutes,
-        };
-        if (data.status === 'confirmed') {
-          sendAppointmentConfirmed(ctx.patientEmail, emailData, row.id);
-        } else {
-          sendAppointmentCancelled(ctx.patientEmail, emailData, row.id);
-        }
+    void getEmailContext(
+      tenantId,
+      row.patientId,
+      row.scheduledAt,
+      row.durationMinutes
+    ).then((ctx) => {
+      if (!ctx.patientEmail) return;
+      const emailData = {
+        patientName: ctx.patientName,
+        professionalName: ctx.professionalName,
+        scheduledAt: ctx.scheduledAt,
+        durationMinutes: ctx.durationMinutes,
+      };
+      if (data.status === 'confirmed') {
+        sendAppointmentConfirmed(ctx.patientEmail, emailData, row.id);
+      } else {
+        sendAppointmentCancelled(ctx.patientEmail, emailData, row.id);
       }
-    );
+    });
   }
 
   return toRow(row);
@@ -409,18 +425,25 @@ export async function cancel(
 
   if (!row) return null;
 
-  void getEmailContext(tenantId, row.patientId, row.scheduledAt, row.durationMinutes).then(
-    (ctx) => {
-      if (ctx.patientEmail) {
-        sendAppointmentCancelled(ctx.patientEmail, {
+  void getEmailContext(
+    tenantId,
+    row.patientId,
+    row.scheduledAt,
+    row.durationMinutes
+  ).then((ctx) => {
+    if (ctx.patientEmail) {
+      sendAppointmentCancelled(
+        ctx.patientEmail,
+        {
           patientName: ctx.patientName,
           professionalName: ctx.professionalName,
           scheduledAt: ctx.scheduledAt,
           durationMinutes: ctx.durationMinutes,
-        }, row.id);
-      }
+        },
+        row.id
+      );
     }
-  );
+  });
 
   return toRow(row);
 }
