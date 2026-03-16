@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-table';
 import { usePatients } from '@/hooks/usePatients';
 import { PatientFormDialog } from '@/components/patients/PatientFormDialog';
+import { PatientActionsMenu } from '@/components/patients/PatientActionsMenu';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableSkeleton } from '@/components/data-table/data-table-skeleton';
@@ -19,7 +20,7 @@ import api from '@/lib/api';
 import type { Patient } from '@/types';
 import type { PatientFormData } from '@/hooks/usePatients';
 import { toast } from 'sonner';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 const columnHelper = createColumnHelper<Patient>();
 
@@ -121,19 +122,17 @@ export function PatientsPage() {
         id: 'actions',
         header: () => <span className="sr-only">Acciones</span>,
         cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => openEdit(row.original)}
-            className="opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
-          >
-            <Pencil className="size-4" />
-            <span className="sr-only">Editar</span>
-          </Button>
+          <div className="flex justify-end">
+            <PatientActionsMenu
+              patient={row.original}
+              onEdit={openEdit}
+              refetch={refetch}
+            />
+          </div>
         ),
       }),
     ],
-    [openEdit]
+    [openEdit, refetch]
   );
 
   const table = useReactTable({

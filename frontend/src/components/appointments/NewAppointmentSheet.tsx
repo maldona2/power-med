@@ -28,8 +28,9 @@ import {
 } from '@/components/ui/popover';
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { QuickAddPatientDialog } from './QuickAddPatientDialog';
 import type { AppointmentFormData } from '@/hooks/useAppointments';
-import type { Patient, Treatment, TreatmentLineItem } from '@/types';
+import type { Patient, Treatment } from '@/types';
 
 interface NewAppointmentSheetProps {
   form: AppointmentFormData;
@@ -38,6 +39,7 @@ interface NewAppointmentSheetProps {
   treatments: Treatment[];
   submitting: boolean;
   onSubmit: (e: React.FormEvent) => void;
+  onPatientCreated: (patient: Patient) => void;
 }
 
 export function NewAppointmentSheet({
@@ -47,6 +49,7 @@ export function NewAppointmentSheet({
   treatments,
   submitting,
   onSubmit,
+  onPatientCreated,
 }: NewAppointmentSheetProps) {
   const lineItems = form.treatments ?? [];
   const totalCents = lineItems.reduce(
@@ -126,7 +129,7 @@ export function NewAppointmentSheet({
                   setForm((f) => ({ ...f, patient_id: value }))
                 }
               >
-                <SelectTrigger className="h-12 rounded-lg">
+                <SelectTrigger className="h-12 w-full rounded-lg bg-background">
                   <SelectValue placeholder="Selecciona un paciente" />
                 </SelectTrigger>
                 <SelectContent>
@@ -138,6 +141,7 @@ export function NewAppointmentSheet({
                   ))}
                 </SelectContent>
               </Select>
+              <QuickAddPatientDialog onPatientCreated={onPatientCreated} />
             </div>
 
             <div className="space-y-2.5">
@@ -182,7 +186,7 @@ export function NewAppointmentSheet({
                 </label>
                 <Input
                   type="time"
-                  className="h-12 rounded-lg"
+                  className="h-12 rounded-lg bg-background"
                   value={form.time}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, time: e.target.value }))
@@ -190,14 +194,17 @@ export function NewAppointmentSheet({
                 />
               </div>
               <div className="space-y-2.5">
-                <label className="text-sm font-medium">Duración</label>
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <Clock className="h-4 w-4 text-primary" />
+                  Duración
+                </label>
                 <Select
                   value={form.duration_minutes.toString()}
                   onValueChange={(value) =>
                     setForm((f) => ({ ...f, duration_minutes: Number(value) }))
                   }
                 >
-                  <SelectTrigger className="h-12 rounded-lg">
+                  <SelectTrigger className="h-12 w-full rounded-lg bg-background">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -233,7 +240,7 @@ export function NewAppointmentSheet({
                     }}
                     value=""
                   >
-                    <SelectTrigger className="h-12 rounded-lg">
+                    <SelectTrigger className="h-12 w-full rounded-lg bg-background">
                       <SelectValue placeholder="Agregar tratamiento" />
                     </SelectTrigger>
                     <SelectContent>
@@ -255,8 +262,8 @@ export function NewAppointmentSheet({
                             key={item.treatment_id}
                             className="flex items-center justify-between gap-2"
                           >
-                            <span className="text-sm font-medium">
-                              {t?.name ?? '—'} × {item.quantity}
+                            <span className="text-sm font-medium truncate">
+                              {t?.name ?? '—'}
                             </span>
                             <div className="flex items-center gap-2">
                               <Input
@@ -312,7 +319,7 @@ export function NewAppointmentSheet({
                 </span>
               </label>
               <Input
-                className="h-12 rounded-lg"
+                className="h-12 rounded-lg bg-background"
                 value={form.notes}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, notes: e.target.value }))

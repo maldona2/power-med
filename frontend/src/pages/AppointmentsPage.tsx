@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import {
   addDays,
   addWeeks,
-  format,
   isSameWeek,
   parseISO,
   startOfWeek,
@@ -25,7 +24,7 @@ import { usePatients } from '@/hooks/usePatients';
 import { useTreatments } from '@/hooks/useTreatments';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import type { Appointment } from '@/types';
+import type { Appointment, Patient } from '@/types';
 import type { AppointmentFormData } from '@/hooks/useAppointments';
 import {
   emptyForm,
@@ -44,7 +43,7 @@ export function AppointmentsPage() {
     setStatus: setStatusFilter,
     refetch,
   } = useAppointments();
-  const { patients } = usePatients();
+  const { patients, refetch: refetchPatients } = usePatients();
   const { treatments } = useTreatments();
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -125,6 +124,14 @@ export function AppointmentsPage() {
     }
   };
 
+  const handlePatientCreated = (patient: Patient) => {
+    // Refetch patients list to include the new patient
+    refetchPatients();
+    // Automatically select the newly created patient
+    setForm((f) => ({ ...f, patient_id: patient.id }));
+    toast.success(`Paciente ${patient.first_name} ${patient.last_name} creado`);
+  };
+
   if (loading) {
     return <CalendarSkeleton />;
   }
@@ -201,6 +208,7 @@ export function AppointmentsPage() {
               treatments={treatments}
               submitting={submitting}
               onSubmit={handleSubmit}
+              onPatientCreated={handlePatientCreated}
             />
           )}
         </SheetContent>

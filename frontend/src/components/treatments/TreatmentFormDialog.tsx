@@ -26,35 +26,48 @@ export function TreatmentFormDialog({
   onSubmit,
 }: TreatmentFormDialogProps) {
   const [name, setName] = useState('');
-  const [priceCents, setPriceCents] = useState('');
+  const [price, setPrice] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (treatment) {
       setName(treatment.name);
-      setPriceCents((treatment.price_cents / 100).toFixed(2));
+      setPrice((treatment.price_cents / 100).toString());
     } else {
       setName('');
-      setPriceCents('');
+      setPrice('');
     }
   }, [treatment, open]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const cents = Math.round(parseFloat(priceCents || '0') * 100);
+
+    const cents = Math.round(parseFloat(price || '0') * 100);
+
     if (!name.trim() || cents < 0) return;
+
     setSubmitting(true);
+
     try {
-      await onSubmit({ name: name.trim(), price_cents: cents });
+      await onSubmit({
+        name: name.trim(),
+        price_cents: cents,
+      });
+
       onOpenChange(false);
     } finally {
       setSubmitting(false);
     }
   }
 
-  const priceDisplay = priceCents
-    ? (parseFloat(priceCents) || 0).toFixed(2)
-    : '';
+  function handlePriceChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value;
+
+    // Permite números y un solo decimal
+    if (/^\d*\.?\d{0,2}$/.test(value) || value === '') {
+      setPrice(value);
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,6 +83,7 @@ export function TreatmentFormDialog({
                 : 'Define un tratamiento con su precio por defecto.'}
             </DialogDescription>
           </DialogHeader>
+
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre</Label>
@@ -80,22 +94,25 @@ export function TreatmentFormDialog({
                 placeholder="ej. Consulta general"
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="price">Precio (moneda local)</Label>
+
               <Input
                 id="price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={priceDisplay}
-                onChange={(e) => setPriceCents(e.target.value)}
+                type="text"
+                inputMode="decimal"
+                value={price}
+                onChange={handlePriceChange}
                 placeholder="0.00"
               />
+
               <p className="text-xs text-muted-foreground">
                 Se guarda en centavos internamente
               </p>
             </div>
           </div>
+
           <DialogFooter>
             <Button
               type="button"
@@ -104,6 +121,7 @@ export function TreatmentFormDialog({
             >
               Cancelar
             </Button>
+
             <Button type="submit" disabled={submitting || !name.trim()}>
               {submitting ? 'Guardando...' : treatment ? 'Guardar' : 'Crear'}
             </Button>

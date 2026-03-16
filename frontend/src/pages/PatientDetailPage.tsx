@@ -306,7 +306,7 @@ export function PatientDetailPage() {
         <TabsContent value="ficha" className="mt-6 space-y-6">
           {/* Contact Information */}
           <Card className="overflow-hidden border-0 shadow-sm">
-            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+            <CardHeader className="border-b px-6 pb-4">
               <CardTitle className="text-base font-medium">
                 Información de contacto
               </CardTitle>
@@ -344,7 +344,7 @@ export function PatientDetailPage() {
           {/* Notes */}
           {patient.notes && (
             <Card className="overflow-hidden border-0 shadow-sm">
-              <CardHeader className="border-b bg-muted/30 px-6 py-4">
+              <CardHeader className="border-b px-6 pb-4">
                 <CardTitle className="flex items-center gap-2 text-base font-medium">
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   Notas
@@ -362,7 +362,7 @@ export function PatientDetailPage() {
         <TabsContent value="historial-medico" className="mt-6 space-y-6">
           {/* Conditions */}
           <Card className="overflow-hidden border-0 shadow-sm">
-            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+            <CardHeader className="border-b px-6 pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base font-medium">
                   <Heart className="h-4 w-4 text-muted-foreground" />
@@ -438,7 +438,7 @@ export function PatientDetailPage() {
 
           {/* Medications */}
           <Card className="overflow-hidden border-0 shadow-sm">
-            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+            <CardHeader className="border-b px-6 pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base font-medium">
                   <Pill className="h-4 w-4 text-muted-foreground" />
@@ -511,7 +511,7 @@ export function PatientDetailPage() {
 
           {/* Allergies */}
           <Card className="overflow-hidden border-0 shadow-sm">
-            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+            <CardHeader className="border-b px-6 pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base font-medium">
                   <AlertTriangle className="h-4 w-4 text-muted-foreground" />
