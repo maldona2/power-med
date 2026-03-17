@@ -21,6 +21,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import logoAtriax from '@/assets/images/logo_sin_fondo3.svg';
+import { AtriaxLogo } from '../landing';
 
 interface SidebarItem {
   to: string;
@@ -49,13 +51,11 @@ function Logo({
 
   return (
     <Link to={href} className="flex items-center gap-2 px-2">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
-        P
-      </div>
+      <AtriaxLogo />
       {!collapsed && (
         <div className="min-w-0">
           <span className="block truncate font-semibold text-foreground">
-            PowerMed
+            Atriax
           </span>
           {firstName && (
             <span className="block truncate text-xs text-muted-foreground">

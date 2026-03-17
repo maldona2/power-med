@@ -1,0 +1,13 @@
+export { AtriaxLogo } from './AtriaxLogo';
+export { LandingHeader } from './LandingHeader';
+export { HeroSection } from './HeroSection';
+export { ProblemSection } from './ProblemSection';
+export { BenefitsSection } from './BenefitsSection';
+export { FeaturesSection } from './FeaturesSection';
+export { HowItWorksSection } from './HowItWorksSection';
+export { TestimonialsSection } from './TestimonialsSection';
+export { CustomerProfilesSection } from './CustomerProfilesSection';
+export { PricingSection } from './PricingSection';
+export { FAQSection } from './FAQSection';
+export { CTASection } from './CTASection';
+export { LandingFooter } from './LandingFooter';

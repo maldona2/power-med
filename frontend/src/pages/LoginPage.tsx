@@ -16,7 +16,8 @@ import {
   FieldLabel,
   FieldError,
 } from '@/components/ui/field';
-import { Stethoscope } from 'lucide-react';
+import logoAtriax from '@/assets/images/logo_sin_fondo3.svg';
+import { AtriaxLogo } from '@/components/landing';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -63,11 +64,9 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-4 py-12">
       <div className="mb-8 flex flex-col items-center gap-2">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <Stethoscope className="h-6 w-6" />
-        </div>
+        <AtriaxLogo />
         <span className="text-lg font-semibold tracking-tight text-foreground">
-          Power Med
+          Atriax
         </span>
       </div>
 

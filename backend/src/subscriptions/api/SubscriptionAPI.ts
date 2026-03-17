@@ -218,20 +218,16 @@ export class SubscriptionAPI {
       if (error instanceof Error && error.name === 'MercadoPagoError') {
         const mpError = error as any;
         if (mpError.statusCode === 503) {
-          res
-            .status(503)
-            .json({
-              error:
-                'Payment service temporarily unavailable. Please try again later.',
-            });
+          res.status(503).json({
+            error:
+              'Payment service temporarily unavailable. Please try again later.',
+          });
           return;
         }
         if (mpError.statusCode === 504 || error.message.includes('timeout')) {
-          res
-            .status(504)
-            .json({
-              error: 'Payment service request timeout. Please try again.',
-            });
+          res.status(504).json({
+            error: 'Payment service request timeout. Please try again.',
+          });
           return;
         }
       }
@@ -264,11 +260,9 @@ export class SubscriptionAPI {
           },
           "Authorization error: User attempted to cancel another user's subscription"
         );
-        res
-          .status(403)
-          .json({
-            error: "Forbidden: Cannot cancel another user's subscription",
-          });
+        res.status(403).json({
+          error: "Forbidden: Cannot cancel another user's subscription",
+        });
         return;
       }
 
@@ -345,20 +339,16 @@ export class SubscriptionAPI {
           return;
         }
         if (mpError.statusCode === 503) {
-          res
-            .status(503)
-            .json({
-              error:
-                'Payment service temporarily unavailable. Please try again later.',
-            });
+          res.status(503).json({
+            error:
+              'Payment service temporarily unavailable. Please try again later.',
+          });
           return;
         }
         if (mpError.statusCode === 504 || error.message.includes('timeout')) {
-          res
-            .status(504)
-            .json({
-              error: 'Payment service request timeout. Please try again.',
-            });
+          res.status(504).json({
+            error: 'Payment service request timeout. Please try again.',
+          });
           return;
         }
       }
@@ -391,11 +381,9 @@ export class SubscriptionAPI {
           },
           "Authorization error: User attempted to pause another user's subscription"
         );
-        res
-          .status(403)
-          .json({
-            error: "Forbidden: Cannot pause another user's subscription",
-          });
+        res.status(403).json({
+          error: "Forbidden: Cannot pause another user's subscription",
+        });
         return;
       }
 
@@ -476,20 +464,16 @@ export class SubscriptionAPI {
           return;
         }
         if (mpError.statusCode === 503) {
-          res
-            .status(503)
-            .json({
-              error:
-                'Payment service temporarily unavailable. Please try again later.',
-            });
+          res.status(503).json({
+            error:
+              'Payment service temporarily unavailable. Please try again later.',
+          });
           return;
         }
         if (mpError.statusCode === 504 || error.message.includes('timeout')) {
-          res
-            .status(504)
-            .json({
-              error: 'Payment service request timeout. Please try again.',
-            });
+          res.status(504).json({
+            error: 'Payment service request timeout. Please try again.',
+          });
           return;
         }
       }
@@ -522,11 +506,9 @@ export class SubscriptionAPI {
           },
           "Authorization error: User attempted to resume another user's subscription"
         );
-        res
-          .status(403)
-          .json({
-            error: "Forbidden: Cannot resume another user's subscription",
-          });
+        res.status(403).json({
+          error: "Forbidden: Cannot resume another user's subscription",
+        });
         return;
       }
 
@@ -607,20 +589,16 @@ export class SubscriptionAPI {
           return;
         }
         if (mpError.statusCode === 503) {
-          res
-            .status(503)
-            .json({
-              error:
-                'Payment service temporarily unavailable. Please try again later.',
-            });
+          res.status(503).json({
+            error:
+              'Payment service temporarily unavailable. Please try again later.',
+          });
           return;
         }
         if (mpError.statusCode === 504 || error.message.includes('timeout')) {
-          res
-            .status(504)
-            .json({
-              error: 'Payment service request timeout. Please try again.',
-            });
+          res.status(504).json({
+            error: 'Payment service request timeout. Please try again.',
+          });
           return;
         }
       }

@@ -11,6 +11,7 @@ import { AdminLayout } from '@/components/layout/AdminLayout';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Toaster } from '@/components/ui/sonner';
 import { LoginPage } from '@/pages/LoginPage';
+import LandingPage from '@/pages/LandingPage';
 import { TenantsPage } from '@/pages/admin/TenantsPage';
 import { AppointmentsPage } from '@/pages/AppointmentsPage';
 import { AppointmentDetailPage } from '@/pages/AppointmentDetailPage';
@@ -57,7 +58,7 @@ function App() {
                 element={<Navigate to="/app/appointments" replace />}
               />
             </Route>
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
