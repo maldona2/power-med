@@ -78,11 +78,61 @@ export class SubscriptionAPI {
     this.router.get('/:userId', this.getSubscriptionStatus.bind(this));
 
     // Webhook endpoints (no JWT authentication, use signature validation)
+    this.router.post('/webhooks', this.handleUnifiedWebhook.bind(this));
     this.router.post('/webhooks/payment', this.handlePaymentWebhook.bind(this));
     this.router.post(
       '/webhooks/preapproval',
       this.handlePreApprovalWebhook.bind(this)
     );
+  }
+
+  /**
+   * POST /webhooks
+   * Unified webhook entrypoint used by Mercado Pago
+   * Dispatches to the specific handler based on payload.type
+   */
+  private async handleUnifiedWebhook(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    const payload = req.body as { type?: string } | undefined;
+
+    if (!payload || typeof payload !== 'object' || typeof payload.type !== 'string') {
+      logger.warn(
+        {
+          payload,
+          timestamp: new Date().toISOString(),
+        },
+        'Unified webhook called with invalid payload'
+      );
+      res.status(400).json({ error: 'Invalid payload structure' });
+      return;
+    }
+
+    // Mercado Pago sends `type` values such as:
+    // - "payment"
+    // - "subscription_preapproval"   (for subscription preapprovals)
+    if (payload.type === 'payment') {
+      await this.handlePaymentWebhook(req, res);
+      return;
+    }
+
+    if (
+      payload.type === 'preapproval' ||
+      payload.type === 'subscription_preapproval'
+    ) {
+      await this.handlePreApprovalWebhook(req, res);
+      return;
+    }
+
+    logger.warn(
+      {
+        type: payload.type,
+        timestamp: new Date().toISOString(),
+      },
+      'Unified webhook received unsupported type'
+    );
+    res.status(400).json({ error: 'Unsupported webhook type' });
   }
 
   /**
@@ -679,7 +729,9 @@ export class SubscriptionAPI {
         plan: sub.plan,
         status: sub.status,
         preApprovalId: sub.preapprovalId,
-        billingPeriodStart: sub.billingPeriodStart.toISOString(),
+        billingPeriodStart: sub.billingPeriodStart
+          ? sub.billingPeriodStart.toISOString()
+          : null,
         features: planDetails.features,
       });
     } catch (error) {
@@ -746,10 +798,10 @@ export class SubscriptionAPI {
       }
 
       // Validate webhook signature
-      const signature = req.headers['x-signature'] as string;
-      const rawBody = JSON.stringify(req.body);
+      const signatureHeader = req.headers['x-signature'] as string;
+      const requestId = req.headers['x-request-id'] as string | undefined;
 
-      if (!signature) {
+      if (!signatureHeader) {
         logger.warn(
           {
             webhookId: webhook.id,
@@ -762,8 +814,9 @@ export class SubscriptionAPI {
       }
 
       const isValidSignature = this.webhookHandler.validateWebhook(
-        signature,
-        rawBody
+        signatureHeader,
+        webhook.id,
+        requestId
       );
 
       if (!isValidSignature) {
@@ -831,10 +884,10 @@ export class SubscriptionAPI {
       }
 
       // Validate webhook signature
-      const signature = req.headers['x-signature'] as string;
-      const rawBody = JSON.stringify(req.body);
+      const signatureHeader = req.headers['x-signature'] as string;
+      const requestId = req.headers['x-request-id'] as string | undefined;
 
-      if (!signature) {
+      if (!signatureHeader) {
         logger.warn(
           {
             webhookId: webhook.id,
@@ -847,8 +900,9 @@ export class SubscriptionAPI {
       }
 
       const isValidSignature = this.webhookHandler.validateWebhook(
-        signature,
-        rawBody
+        signatureHeader,
+        webhook.id,
+        requestId
       );
 
       if (!isValidSignature) {
@@ -911,12 +965,13 @@ export class SubscriptionAPI {
   private isValidPreApprovalWebhook(
     payload: any
   ): payload is PreApprovalWebhook {
-    const validActions = ['authorized', 'cancelled', 'paused', 'failed'];
+    const validActions = ['authorized', 'cancelled', 'paused', 'failed', 'updated'];
     return (
       payload &&
       typeof payload === 'object' &&
       typeof payload.id === 'string' &&
-      payload.type === 'preapproval' &&
+      (payload.type === 'preapproval' ||
+        payload.type === 'subscription_preapproval') &&
       typeof payload.action === 'string' &&
       validActions.includes(payload.action) &&
       payload.data &&

@@ -28,31 +28,70 @@ export class WebhookHandler {
    * Validate webhook signature using HMAC-SHA256
    * Mercado Pago sends signature in x-signature header
    */
-  validateWebhook(signature: string, payload: string): boolean {
+  validateWebhook(
+    signatureHeader: string,
+    resourceId: string,
+    requestId?: string
+  ): boolean {
     try {
-      if (!signature || !payload) {
+      if (!signatureHeader || !resourceId) {
         logger.warn(
-          { signature: !!signature, payload: !!payload },
-          'Invalid webhook signature validation: missing signature or payload'
+          { signature: !!signatureHeader, resourceId: !!resourceId },
+          'Invalid webhook signature validation: missing signature or resource id'
         );
         return false;
       }
 
-      // Create HMAC using webhook secret
+      // Expected Mercado Pago signature format:
+      //   ts=1730906800,v1=<hex_hmac>
+      const parts = signatureHeader.split(',');
+      const tsPart = parts.find((p) => p.startsWith('ts='));
+      const v1Part = parts.find((p) => p.startsWith('v1='));
+
+      if (!tsPart || !v1Part) {
+        logger.warn(
+          { signatureHeader },
+          'Invalid webhook signature format: missing ts or v1'
+        );
+        return false;
+      }
+
+      const ts = tsPart.split('=')[1];
+      const v1 = v1Part.split('=')[1];
+
+      if (!ts || !v1) {
+        logger.warn(
+          { signatureHeader },
+          'Invalid webhook signature format: empty ts or v1'
+        );
+        return false;
+      }
+
+      if (!requestId) {
+        logger.warn(
+          { resourceId, ts },
+          'Missing x-request-id header for webhook signature validation'
+        );
+        return false;
+      }
+
+      const signedTemplate = `id:${resourceId};request-id:${requestId};ts:${ts}`;
+
+      // Create HMAC using webhook secret and Mercado Pago template
       const hmac = crypto.createHmac('sha256', this.webhookSecret);
-      hmac.update(payload);
+      hmac.update(signedTemplate);
       const expectedSignature = hmac.digest('hex');
 
       // Compare signatures using timing-safe comparison
       const isValid = crypto.timingSafeEqual(
-        Buffer.from(signature),
+        Buffer.from(v1),
         Buffer.from(expectedSignature)
       );
 
       if (!isValid) {
         logger.error(
           {
-            signatureLength: signature.length,
+            signatureLength: v1.length,
             timestamp: new Date().toISOString(),
           },
           'Security event: Invalid webhook signature detected'
@@ -384,8 +423,34 @@ export class WebhookHandler {
         'Found subscription for PreApproval webhook'
       );
 
-      // Handle different PreApproval actions
-      switch (action) {
+      // For "updated" events, fetch the current PreApproval status from Mercado Pago
+      let effectiveAction = action;
+      if (action === 'updated') {
+        const details = await this.fetchPreApprovalDetails(preapprovalId);
+        const status = (details?.status ?? '').toLowerCase();
+
+        if (status === 'authorized') {
+          effectiveAction = 'authorized';
+        } else if (status === 'cancelled') {
+          effectiveAction = 'cancelled';
+        } else if (status === 'paused') {
+          effectiveAction = 'paused';
+        } else if (status === 'rejected' || status === 'expired') {
+          effectiveAction = 'failed';
+        } else {
+          logger.warn(
+            {
+              webhookId: webhook.id,
+              preapprovalId,
+              rawStatus: details?.status,
+            },
+            'PreApproval updated webhook with unrecognized status, leaving subscription unchanged'
+          );
+        }
+      }
+
+      // Handle different PreApproval actions (including mapped "updated" events)
+      switch (effectiveAction) {
         case 'authorized':
           // Update subscription status to active
           await db
@@ -505,11 +570,11 @@ export class WebhookHandler {
           logger.error(
             {
               webhookId: webhook.id,
-              action,
+              action: effectiveAction,
             },
             'PreApproval webhook error: Unknown action'
           );
-          throw new Error(`Unknown PreApproval action: ${action}`);
+          throw new Error(`Unknown PreApproval action: ${effectiveAction}`);
       }
 
       // Log webhook event
@@ -527,7 +592,7 @@ export class WebhookHandler {
           webhookId: webhook.id,
           preapprovalId,
           userId,
-          action,
+          action: effectiveAction,
         },
         'PreApproval webhook processed successfully'
       );
@@ -621,6 +686,75 @@ export class WebhookHandler {
           errorType: error instanceof Error ? error.name : 'Unknown',
         },
         'Payment Gateway error: Failed to fetch payment details'
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch PreApproval details from Mercado Pago API
+   */
+  private async fetchPreApprovalDetails(preapprovalId: string): Promise<any> {
+    try {
+      logger.info(
+        { preapprovalId },
+        'Fetching PreApproval details from Mercado Pago API'
+      );
+
+      const response = await fetch(
+        `https://api.mercadopago.com/preapproval/${preapprovalId}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response
+          .text()
+          .catch(() => 'Unable to read error response');
+        logger.error(
+          {
+            preapprovalId,
+            status: response.status,
+            statusText: response.statusText,
+            errorBody: errorText,
+          },
+          'Payment Gateway error: Failed to fetch PreApproval details from Mercado Pago'
+        );
+        throw new Error(
+          `Failed to fetch PreApproval details: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+      logger.info(
+        { preapprovalId },
+        'Successfully fetched PreApproval details from Mercado Pago'
+      );
+      return data;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('fetch')) {
+        logger.error(
+          {
+            preapprovalId,
+            error: error.message,
+          },
+          'Payment Gateway error: Network error fetching PreApproval details'
+        );
+        throw new Error(
+          `Network error fetching PreApproval details: ${error.message}`
+        );
+      }
+      logger.error(
+        {
+          preapprovalId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          errorType: error instanceof Error ? error.name : 'Unknown',
+        },
+        'Payment Gateway error: Failed to fetch PreApproval details'
       );
       throw error;
     }
