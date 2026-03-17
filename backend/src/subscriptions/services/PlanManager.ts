@@ -11,7 +11,7 @@ import { SubscriptionPlan, PlanName, SENTINEL_VALUE } from '../models/types.js';
 const PLANS: Record<PlanName, SubscriptionPlan> = {
   pro: {
     name: 'pro',
-    priceARS: 15000,
+    priceARS: 1500,
     features: {
       appointments: true,
       calendarSync: true,

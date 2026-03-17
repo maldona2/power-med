@@ -1062,7 +1062,7 @@ export function ProfilePage() {
                   </div>
                   <div className="mb-6">
                     <span className="text-4xl font-bold tracking-tight">
-                      $29
+                      $1500
                     </span>
                     <span className="text-muted-foreground">/mes</span>
                   </div>
@@ -1108,7 +1108,7 @@ export function ProfilePage() {
                   </div>
                   <div className="mb-6">
                     <span className="text-4xl font-bold tracking-tight">
-                      $99
+                      $30000
                     </span>
                     <span className="text-muted-foreground">/mes</span>
                   </div>
