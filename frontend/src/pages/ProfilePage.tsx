@@ -66,6 +66,7 @@ import { usePatients } from '@/hooks/usePatients';
 import { useTreatments } from '@/hooks/useTreatments';
 import { useSubscription } from '@/hooks/useSubscription';
 import { TreatmentFormDialog } from '@/components/treatments';
+import type { Treatment } from '@/types';
 import { SubscriptionCard } from '@/components/subscriptions/SubscriptionCard';
 import { FeatureStatus } from '@/components/subscriptions/FeatureStatus';
 
@@ -170,11 +171,7 @@ export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [treatmentDialogOpen, setTreatmentDialogOpen] = useState(false);
-  const [editingTreatment, setEditingTreatment] = useState<{
-    id: string;
-    name: string;
-    price_cents: number;
-  } | null>(null);
+  const [editingTreatment, setEditingTreatment] = useState<Treatment | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -830,11 +827,7 @@ export function ProfilePage() {
                             variant="ghost"
                             size="icon-sm"
                             onClick={() => {
-                              setEditingTreatment({
-                                id: t.id,
-                                name: t.name,
-                                price_cents: t.price_cents,
-                              });
+                              setEditingTreatment(t);
                               setTreatmentDialogOpen(true);
                             }}
                           >
@@ -863,18 +856,7 @@ export function ProfilePage() {
                 setTreatmentDialogOpen(open);
                 if (!open) setEditingTreatment(null);
               }}
-              treatment={
-                editingTreatment
-                  ? {
-                      id: editingTreatment.id,
-                      tenant_id: '',
-                      name: editingTreatment.name,
-                      price_cents: editingTreatment.price_cents,
-                      created_at: null,
-                      updated_at: null,
-                    }
-                  : null
-              }
+              treatment={editingTreatment}
               onSubmit={async (data) => {
                 if (editingTreatment) {
                   await updateTreatment(editingTreatment.id, data);

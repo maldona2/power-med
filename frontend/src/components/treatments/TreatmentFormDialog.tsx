@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { CalendarDays, Repeat, ArrowRight } from 'lucide-react';
 import type { Treatment } from '@/types';
 
 interface TreatmentFormDialogProps {
@@ -83,14 +85,14 @@ export function TreatmentFormDialog({
         price_cents: cents,
         initial_frequency_weeks: initialFrequency
           ? parseInt(initialFrequency, 10)
-          : null,
+          : undefined,
         initial_sessions_count: initialSessions
           ? parseInt(initialSessions, 10)
-          : null,
+          : undefined,
         maintenance_frequency_weeks: maintenanceFrequency
           ? parseInt(maintenanceFrequency, 10)
-          : null,
-        protocol_notes: protocolNotes || null,
+          : undefined,
+        protocol_notes: protocolNotes || undefined,
       });
 
       onOpenChange(false);
@@ -158,74 +160,104 @@ export function TreatmentFormDialog({
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
+            <div className="flex items-center justify-between">
+              <Label htmlFor="showProtocol" className="font-normal">
+                Agregar protocolo de seguimiento
+              </Label>
+              <Switch
                 id="showProtocol"
                 checked={showProtocol}
-                onChange={(e) => setShowProtocol(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300"
+                onCheckedChange={setShowProtocol}
               />
-              <Label htmlFor="showProtocol" className="font-normal">
-                Configurar protocolo de seguimiento
-              </Label>
             </div>
 
             {showProtocol && (
               <div className="grid gap-4 rounded-lg border p-4">
-                <p className="text-sm font-medium">Protocolo de tratamiento</p>
+                {/* Phase 1 */}
+                <div>
+                  <p className="mb-3 text-sm font-medium">Fase inicial</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="initialFrequency"
+                        className="flex items-center gap-1.5 text-xs"
+                      >
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        Cada cuántas semanas
+                      </Label>
+                      <Input
+                        id="initialFrequency"
+                        type="text"
+                        inputMode="numeric"
+                        value={initialFrequency}
+                        onChange={handleNumberChange(setInitialFrequency)}
+                        placeholder="ej. 4"
+                      />
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="initialFrequency">
-                      Frecuencia inicial (semanas)
-                    </Label>
-                    <Input
-                      id="initialFrequency"
-                      type="text"
-                      inputMode="numeric"
-                      value={initialFrequency}
-                      onChange={handleNumberChange(setInitialFrequency)}
-                      placeholder="ej. 4"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Cada cuántas semanas al inicio
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="initialSessions">Sesiones iniciales</Label>
-                    <Input
-                      id="initialSessions"
-                      type="text"
-                      inputMode="numeric"
-                      value={initialSessions}
-                      onChange={handleNumberChange(setInitialSessions)}
-                      placeholder="ej. 3"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Cuántas sesiones en fase inicial
-                    </p>
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="initialSessions"
+                        className="flex items-center gap-1.5 text-xs"
+                      >
+                        <Repeat className="h-3.5 w-3.5" />
+                        Número de sesiones
+                      </Label>
+                      <Input
+                        id="initialSessions"
+                        type="text"
+                        inputMode="numeric"
+                        value={initialSessions}
+                        onChange={handleNumberChange(setInitialSessions)}
+                        placeholder="ej. 3"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="maintenanceFrequency">
-                    Frecuencia mantenimiento (semanas)
-                  </Label>
-                  <Input
-                    id="maintenanceFrequency"
-                    type="text"
-                    inputMode="numeric"
-                    value={maintenanceFrequency}
-                    onChange={handleNumberChange(setMaintenanceFrequency)}
-                    placeholder="ej. 12"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Cada cuántas semanas después de completar las iniciales (ej.
-                    12 = trimestral)
-                  </p>
-                </div>
+                {/* Phase 2 — only shown when Phase 1 has values */}
+                {(initialFrequency || initialSessions) && (
+                  <div className="border-t pt-4">
+                    <p className="mb-1 text-sm font-medium">Mantenimiento</p>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      Se activa luego de completar las sesiones iniciales
+                    </p>
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="maintenanceFrequency"
+                        className="flex items-center gap-1.5 text-xs"
+                      >
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        Cada cuántas semanas después
+                      </Label>
+                      <Input
+                        id="maintenanceFrequency"
+                        type="text"
+                        inputMode="numeric"
+                        value={maintenanceFrequency}
+                        onChange={handleNumberChange(setMaintenanceFrequency)}
+                        placeholder="ej. 12"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Live summary */}
+                {(initialFrequency || initialSessions || maintenanceFrequency) && (
+                  <div className="flex items-center gap-1.5 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+                    <ArrowRight className="h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      Protocolo:{' '}
+                      {initialSessions
+                        ? `${initialSessions} sesión${parseInt(initialSessions, 10) !== 1 ? 'es' : ''}`
+                        : '—'}{' '}
+                      {initialFrequency ? `cada ${initialFrequency} semana${parseInt(initialFrequency, 10) !== 1 ? 's' : ''}` : ''}
+                      {maintenanceFrequency
+                        ? ` → luego cada ${maintenanceFrequency} semana${parseInt(maintenanceFrequency, 10) !== 1 ? 's' : ''}`
+                        : ''}
+                    </span>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="protocolNotes">Notas del protocolo</Label>
