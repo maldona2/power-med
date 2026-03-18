@@ -68,3 +68,10 @@ export {
   validateContentStructure,
   validateRequiredFields,
 } from '../utils/content-validator';
+
+// Treatment types
+export type {
+  Treatment,
+  PatientTreatment,
+  TreatmentLineItem,
+} from './treatments';

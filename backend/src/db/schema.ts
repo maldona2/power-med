@@ -171,6 +171,10 @@ export const treatments = pgTable(
       .references(() => tenants.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     priceCents: integer('price_cents').notNull(),
+    initialFrequencyWeeks: integer('initial_frequency_weeks'),
+    initialSessionsCount: integer('initial_sessions_count'),
+    maintenanceFrequencyWeeks: integer('maintenance_frequency_weeks'),
+    protocolNotes: text('protocol_notes'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
@@ -179,6 +183,43 @@ export const treatments = pgTable(
 
 export type Treatment = typeof treatments.$inferSelect;
 export type NewTreatment = typeof treatments.$inferInsert;
+
+// ─── patient_treatments ──────────────────────────────────────────────────────
+
+export const patientTreatments = pgTable(
+  'patient_treatments',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    patientId: uuid('patient_id')
+      .notNull()
+      .references(() => patients.id, { onDelete: 'cascade' }),
+    treatmentId: uuid('treatment_id')
+      .notNull()
+      .references(() => treatments.id, { onDelete: 'cascade' }),
+    currentSession: integer('current_session').notNull().default(1),
+    startedAt: timestamp('started_at', { withTimezone: true }).defaultNow(),
+    lastAppointmentId: uuid('last_appointment_id').references(
+      () => appointments.id,
+      { onDelete: 'set null' }
+    ),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index('idx_patient_treatments_tenant').on(table.tenantId),
+    index('idx_patient_treatments_patient').on(table.patientId),
+    index('idx_patient_treatments_treatment').on(table.treatmentId),
+  ]
+);
+
+export type PatientTreatment = typeof patientTreatments.$inferSelect;
+export type NewPatientTreatment = typeof patientTreatments.$inferInsert;
 
 // ─── appointment_treatments ───────────────────────────────────────────────────
 
@@ -499,12 +540,35 @@ export const appointmentsRelations = relations(
   })
 );
 
-export const treatmentsRelations = relations(treatments, ({ one }) => ({
+export const treatmentsRelations = relations(treatments, ({ one, many }) => ({
   tenant: one(tenants, {
     fields: [treatments.tenantId],
     references: [tenants.id],
   }),
+  patientTreatments: many(patientTreatments),
 }));
+
+export const patientTreatmentsRelations = relations(
+  patientTreatments,
+  ({ one }) => ({
+    tenant: one(tenants, {
+      fields: [patientTreatments.tenantId],
+      references: [tenants.id],
+    }),
+    patient: one(patients, {
+      fields: [patientTreatments.patientId],
+      references: [patients.id],
+    }),
+    treatment: one(treatments, {
+      fields: [patientTreatments.treatmentId],
+      references: [treatments.id],
+    }),
+    lastAppointment: one(appointments, {
+      fields: [patientTreatments.lastAppointmentId],
+      references: [appointments.id],
+    }),
+  })
+);
 
 export const appointmentTreatmentsRelations = relations(
   appointmentTreatments,

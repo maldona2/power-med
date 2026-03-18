@@ -6,6 +6,10 @@ export interface TreatmentRow {
   tenant_id: string;
   name: string;
   price_cents: number;
+  initial_frequency_weeks: number | null;
+  initial_sessions_count: number | null;
+  maintenance_frequency_weeks: number | null;
+  protocol_notes: string | null;
   created_at: Date | null;
   updated_at: Date | null;
 }
@@ -13,7 +17,13 @@ export interface TreatmentRow {
 export interface CreateTreatmentInput {
   name: string;
   price_cents: number;
+  initial_frequency_weeks?: number | null;
+  initial_sessions_count?: number | null;
+  maintenance_frequency_weeks?: number | null;
+  protocol_notes?: string | null;
 }
+
+export interface UpdateTreatmentInput extends Partial<CreateTreatmentInput> {}
 
 function toRow(t: typeof treatments.$inferSelect): TreatmentRow {
   return {
@@ -21,6 +31,10 @@ function toRow(t: typeof treatments.$inferSelect): TreatmentRow {
     tenant_id: t.tenantId,
     name: t.name,
     price_cents: t.priceCents,
+    initial_frequency_weeks: t.initialFrequencyWeeks,
+    initial_sessions_count: t.initialSessionsCount,
+    maintenance_frequency_weeks: t.maintenanceFrequencyWeeks,
+    protocol_notes: t.protocolNotes,
     created_at: t.createdAt ?? null,
     updated_at: t.updatedAt ?? null,
   };
@@ -34,6 +48,17 @@ export async function list(tenantId: string): Promise<TreatmentRow[]> {
   return rows.map(toRow);
 }
 
+export async function getById(
+  tenantId: string,
+  id: string
+): Promise<TreatmentRow | null> {
+  const [row] = await db
+    .select()
+    .from(treatments)
+    .where(and(eq(treatments.id, id), eq(treatments.tenantId, tenantId)));
+  return row ? toRow(row) : null;
+}
+
 export async function create(
   tenantId: string,
   data: CreateTreatmentInput
@@ -44,6 +69,10 @@ export async function create(
       tenantId,
       name: data.name,
       priceCents: data.price_cents,
+      initialFrequencyWeeks: data.initial_frequency_weeks ?? null,
+      initialSessionsCount: data.initial_sessions_count ?? null,
+      maintenanceFrequencyWeeks: data.maintenance_frequency_weeks ?? null,
+      protocolNotes: data.protocol_notes ?? null,
       updatedAt: new Date(),
     })
     .returning();
@@ -54,11 +83,19 @@ export async function create(
 export async function update(
   tenantId: string,
   id: string,
-  data: Partial<CreateTreatmentInput>
+  data: UpdateTreatmentInput
 ): Promise<TreatmentRow | null> {
   const updates: Record<string, unknown> = { updatedAt: new Date() };
   if (data.name !== undefined) updates.name = data.name;
   if (data.price_cents !== undefined) updates.priceCents = data.price_cents;
+  if (data.initial_frequency_weeks !== undefined)
+    updates.initialFrequencyWeeks = data.initial_frequency_weeks;
+  if (data.initial_sessions_count !== undefined)
+    updates.initialSessionsCount = data.initial_sessions_count;
+  if (data.maintenance_frequency_weeks !== undefined)
+    updates.maintenanceFrequencyWeeks = data.maintenance_frequency_weeks;
+  if (data.protocol_notes !== undefined)
+    updates.protocolNotes = data.protocol_notes;
 
   const [row] = await db
     .update(treatments)

@@ -10,6 +10,10 @@ const professionalOnly = [authenticate, requireRole('professional')];
 const createTreatmentSchema = z.object({
   name: z.string().min(1),
   price_cents: z.number().int().min(0),
+  initial_frequency_weeks: z.number().int().min(1).optional(),
+  initial_sessions_count: z.number().int().min(1).optional(),
+  maintenance_frequency_weeks: z.number().int().min(1).optional(),
+  protocol_notes: z.string().optional(),
 });
 
 const updateTreatmentSchema = createTreatmentSchema.partial();

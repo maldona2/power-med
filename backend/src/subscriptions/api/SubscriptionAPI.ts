@@ -225,7 +225,7 @@ export class SubscriptionAPI {
         plan,
         priceARS: planDetails.priceARS,
         frequency: 'monthly',
-        callbackUrl: this.config.WEBHOOK_CALLBACK_URL,
+        callbackUrl: this.config.SUBSCRIPTION_REDIRECT_URL,
         userEmail: user.email,
       });
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { usePatient } from '@/hooks/usePatients';
-import { useTreatments } from '@/hooks/useTreatments';
+import { useTreatments, usePatientTreatments } from '@/hooks/useTreatments';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import {
@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { PatientFormDialog } from '@/components/patients/PatientFormDialog';
 import { MedicalHistoryDialog } from '@/components/patients/MedicalHistoryDialog';
+import { PatientTreatmentsCard } from '@/components/treatments';
 import { emptyForm, NewAppointmentSheet } from '@/components/appointments';
 import type { PatientFormData } from '@/hooks/usePatients';
 import type { AppointmentFormData } from '@/hooks/useAppointments';
@@ -67,6 +68,14 @@ export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { detail, loading, refetch } = usePatient(id);
   const { treatments } = useTreatments();
+  const {
+    patientTreatments,
+    loading: patientTreatmentsLoading,
+    assignTreatment,
+    completeSession,
+    removePatientTreatment,
+    calculateNextAppointment,
+  } = usePatientTreatments(id ?? null);
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [appointmentSheetOpen, setAppointmentSheetOpen] = useState(false);
@@ -186,6 +195,30 @@ export function PatientDetailPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleAssignTreatment = async (treatmentId: string) => {
+    await assignTreatment(treatmentId);
+  };
+
+  const handleCompleteSession = async (patientTreatmentId: string) => {
+    if (!id) return;
+    try {
+      await api.post(
+        `/patient-treatments/${patientTreatmentId}/complete-session`,
+        {
+          appointment_id: '',
+        }
+      );
+      toast.success('Sesión completada');
+    } catch {
+      toast.error('Error al completar sesión');
+    }
+  };
+
+  const handleRemovePatientTreatment = async (patientTreatmentId: string) => {
+    if (!confirm('¿Eliminar este tratamiento del paciente?')) return;
+    await removePatientTreatment(patientTreatmentId);
   };
 
   if (loading) {
@@ -357,6 +390,17 @@ export function PatientDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Patient Treatments */}
+          <PatientTreatmentsCard
+            treatments={treatments}
+            patientTreatments={patientTreatments}
+            loading={patientTreatmentsLoading}
+            onAssignTreatment={handleAssignTreatment}
+            onCompleteSession={handleCompleteSession}
+            onRemoveTreatment={handleRemovePatientTreatment}
+            calculateNextAppointment={calculateNextAppointment}
+          />
         </TabsContent>
 
         <TabsContent value="historial-medico" className="mt-6 space-y-6">

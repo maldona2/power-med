@@ -23,6 +23,11 @@ const envSchema = z.object({
     .string()
     .url('Webhook callback URL must be a valid URL'),
 
+  // Frontend redirect URL after payment (where the user's browser is sent back)
+  SUBSCRIPTION_REDIRECT_URL: z
+    .string()
+    .url('Subscription redirect URL must be a valid URL'),
+
   // Database (already configured in main app, but included for completeness)
   DATABASE_URL: z
     .string()
@@ -44,6 +49,7 @@ export function loadSubscriptionConfig(): SubscriptionEnvConfig {
       MERCADO_PAGO_PUBLIC_KEY: process.env.MERCADO_PAGO_PUBLIC_KEY,
       MERCADO_PAGO_WEBHOOK_SECRET: process.env.MERCADO_PAGO_WEBHOOK_SECRET,
       WEBHOOK_CALLBACK_URL: process.env.WEBHOOK_CALLBACK_URL,
+      SUBSCRIPTION_REDIRECT_URL: process.env.SUBSCRIPTION_REDIRECT_URL,
       DATABASE_URL: process.env.DATABASE_URL,
     });
 
