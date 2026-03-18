@@ -21,6 +21,8 @@ import { AppointmentDetailPage } from '@/pages/AppointmentDetailPage';
 import { PatientsPage } from '@/pages/PatientsPage';
 import { PatientDetailPage } from '@/pages/PatientDetailPage';
 import { ProfilePage } from '@/pages/ProfilePage';
+import TermsPage from '@/pages/TermsPage';
+import PrivacyPage from '@/pages/PrivacyPage';
 
 function App() {
   return (
@@ -85,6 +87,8 @@ function App() {
                 </PublicRoute>
               }
             />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { AtriaxLogo } from './AtriaxLogo';
 
 export function LandingFooter() {
@@ -12,12 +13,18 @@ export function LandingFooter() {
             </span>
           </div>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">
+            <Link
+              to="/terms"
+              className="hover:text-foreground transition-colors"
+            >
               Términos
-            </a>
-            <a href="#" className="hover:text-foreground transition-colors">
+            </Link>
+            <Link
+              to="/privacy"
+              className="hover:text-foreground transition-colors"
+            >
               Privacidad
-            </a>
+            </Link>
             <a href="#" className="hover:text-foreground transition-colors">
               Contacto
             </a>
