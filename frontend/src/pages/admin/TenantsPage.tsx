@@ -20,9 +20,167 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { CreditCard } from 'lucide-react';
+
+type SubscriptionPlan = 'free' | 'pro' | 'gold';
+type SubscriptionStatus = 'active' | 'paused' | 'cancelled';
+
+function PlanBadge({ plan }: { plan?: SubscriptionPlan }) {
+  const p = plan ?? 'free';
+  const styles: Record<SubscriptionPlan, string> = {
+    free: 'bg-muted text-muted-foreground',
+    pro: 'bg-blue-100 text-blue-700',
+    gold: 'bg-amber-100 text-amber-700',
+  };
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${styles[p]}`}
+    >
+      {p}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status?: SubscriptionStatus }) {
+  const s = status ?? 'active';
+  const styles: Record<SubscriptionStatus, string> = {
+    active: 'bg-green-100 text-green-700',
+    paused: 'bg-yellow-100 text-yellow-700',
+    cancelled: 'bg-red-100 text-red-700',
+  };
+  const labels: Record<SubscriptionStatus, string> = {
+    active: 'Activo',
+    paused: 'Pausado',
+    cancelled: 'Cancelado',
+  };
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${styles[s]}`}
+    >
+      {labels[s]}
+    </span>
+  );
+}
+
+function EditSubscriptionDialog({
+  tenant,
+  onUpdated,
+}: {
+  tenant: Tenant;
+  onUpdated: (plan: SubscriptionPlan, status: SubscriptionStatus) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [plan, setPlan] = useState<SubscriptionPlan>(
+    tenant.subscription_plan ?? 'free'
+  );
+  const [status, setStatus] = useState<SubscriptionStatus>(
+    tenant.subscription_status ?? 'active'
+  );
+  const [submitting, setSubmitting] = useState(false);
+
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      setPlan(tenant.subscription_plan ?? 'free');
+      setStatus(tenant.subscription_status ?? 'active');
+    }
+    setOpen(next);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await api.put(`/admin/tenants/${tenant.id}/subscription`, {
+        plan,
+        status,
+      });
+      toast.success('Suscripción actualizada');
+      onUpdated(plan, status);
+      setOpen(false);
+    } catch {
+      toast.error('Error al actualizar suscripción');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" title="Editar suscripción">
+          <CreditCard className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Editar suscripción</DialogTitle>
+            <DialogDescription>
+              Modifica el plan y estado de suscripción de{' '}
+              <strong>{tenant.name}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Plan</Label>
+              <Select
+                value={plan}
+                onValueChange={(v) => setPlan(v as SubscriptionPlan)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="gold">Gold</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Estado</Label>
+              <Select
+                value={status}
+                onValueChange={(v) => setStatus(v as SubscriptionStatus)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Activo</SelectItem>
+                  <SelectItem value="paused">Pausado</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -82,6 +240,20 @@ export function TenantsPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleSubscriptionUpdated(
+    tenantId: string,
+    plan: SubscriptionPlan,
+    status: SubscriptionStatus
+  ) {
+    setTenants((prev) =>
+      prev.map((t) =>
+        t.id === tenantId
+          ? { ...t, subscription_plan: plan, subscription_status: status }
+          : t
+      )
+    );
   }
 
   return (
@@ -189,6 +361,9 @@ export function TenantsPage() {
               <TableHead>Slug</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Estado</TableHead>
+              <TableHead>Plan</TableHead>
+              <TableHead>Estado sub.</TableHead>
+              <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -201,6 +376,20 @@ export function TenantsPage() {
                   <Badge variant={t.is_active ? 'default' : 'secondary'}>
                     {t.is_active ? 'Activo' : 'Inactivo'}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <PlanBadge plan={t.subscription_plan} />
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={t.subscription_status} />
+                </TableCell>
+                <TableCell>
+                  <EditSubscriptionDialog
+                    tenant={t}
+                    onUpdated={(plan, status) =>
+                      handleSubscriptionUpdated(t.id, plan, status)
+                    }
+                  />
                 </TableCell>
               </TableRow>
             ))}

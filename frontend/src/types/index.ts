@@ -75,3 +75,15 @@ export type {
   PatientTreatment,
   TreatmentLineItem,
 } from './treatments';
+
+// Admin types
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  created_at: string | null;
+  user_email?: string;
+  subscription_plan?: 'free' | 'pro' | 'gold';
+  subscription_status?: 'active' | 'paused' | 'cancelled';
+}

@@ -12,6 +12,8 @@ export interface TenantRow {
   is_active: boolean;
   created_at: Date | null;
   user_email?: string;
+  subscription_plan?: 'free' | 'pro' | 'gold';
+  subscription_status?: 'active' | 'paused' | 'cancelled';
 }
 
 export interface CreateTenantInput {
@@ -55,6 +57,8 @@ export async function listTenants(): Promise<TenantRow[]> {
       createdAt: tenants.createdAt,
       updatedAt: tenants.updatedAt,
       userEmail: users.email,
+      subscriptionPlan: users.subscriptionPlan,
+      subscriptionStatus: users.subscriptionStatus,
     })
     .from(tenants)
     .leftJoin(
@@ -70,7 +74,24 @@ export async function listTenants(): Promise<TenantRow[]> {
     is_active: r.isActive,
     created_at: r.createdAt,
     user_email: r.userEmail ?? undefined,
+    subscription_plan: r.subscriptionPlan ?? undefined,
+    subscription_status: r.subscriptionStatus ?? undefined,
   }));
+}
+
+export async function updateTenantSubscription(
+  tenantId: string,
+  plan: 'free' | 'pro' | 'gold',
+  status: 'active' | 'paused' | 'cancelled'
+): Promise<{ subscription_plan: string; subscription_status: string } | null> {
+  const [updated] = await db
+    .update(users)
+    .set({ subscriptionPlan: plan, subscriptionStatus: status, updatedAt: new Date() })
+    .where(and(eq(users.tenantId, tenantId), eq(users.role, 'professional')))
+    .returning({ subscriptionPlan: users.subscriptionPlan, subscriptionStatus: users.subscriptionStatus });
+
+  if (!updated) return null;
+  return { subscription_plan: updated.subscriptionPlan, subscription_status: updated.subscriptionStatus };
 }
 
 export async function getTenantById(id: string): Promise<TenantRow | null> {

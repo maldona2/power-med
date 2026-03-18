@@ -21,6 +21,11 @@ const updateTenantSchema = z.object({
   is_active: z.boolean().optional(),
 });
 
+const updateSubscriptionSchema = z.object({
+  plan: z.enum(['free', 'pro', 'gold']),
+  status: z.enum(['active', 'paused', 'cancelled']),
+});
+
 router.get(
   '/tenants',
   adminOnly,
@@ -78,6 +83,35 @@ router.put(
         return next(err);
       }
       res.json(tenant);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.put(
+  '/tenants/:id/subscription',
+  adminOnly,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsed = updateSubscriptionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        const err = new Error('Invalid payload');
+        (err as Error & { statusCode?: number }).statusCode = 400;
+        return next(err);
+      }
+
+      const result = await tenantService.updateTenantSubscription(
+        req.params.id,
+        parsed.data.plan,
+        parsed.data.status
+      );
+      if (!result) {
+        const err = new Error('Tenant not found');
+        (err as Error & { statusCode?: number }).statusCode = 404;
+        return next(err);
+      }
+      res.json(result);
     } catch (e) {
       next(e);
     }
