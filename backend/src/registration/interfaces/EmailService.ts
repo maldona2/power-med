@@ -1,4 +1,4 @@
-import { TokenValidation } from '../models';
+import { TokenValidation } from '../models/index.js';
 
 /**
  * Email Service interface
@@ -12,7 +12,11 @@ export interface EmailService {
    * @param firstName - User's first name for personalization
    * @returns Promise resolving when email is sent
    */
-  sendVerificationEmail(email: string, token: string, firstName: string): Promise<void>;
+  sendVerificationEmail(
+    email: string,
+    token: string,
+    firstName: string
+  ): Promise<void>;
 
   /**
    * Generate a unique verification token for user

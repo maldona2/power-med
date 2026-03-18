@@ -1,4 +1,9 @@
-import { Subscription, SubscriptionTier, ResourceType, LimitCheck } from '../models';
+import {
+  Subscription,
+  SubscriptionTier,
+  ResourceType,
+  LimitCheck,
+} from '../models/index.js';
 
 /**
  * Subscription Manager interface
@@ -25,7 +30,10 @@ export interface SubscriptionManager {
    * @param newTier - New subscription tier
    * @returns Promise resolving to updated subscription
    */
-  upgradeSubscription(userId: string, newTier: SubscriptionTier): Promise<Subscription>;
+  upgradeSubscription(
+    userId: string,
+    newTier: SubscriptionTier
+  ): Promise<Subscription>;
 
   /**
    * Check if user can access a specific resource within their limits

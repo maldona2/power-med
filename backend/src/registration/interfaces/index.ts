@@ -1,7 +1,7 @@
 // Core interfaces for the registration system
-export * from './RegistrationAPI';
-export * from './DataValidator';
-export * from './UserService';
-export * from './SubscriptionManager';
-export * from './EmailService';
-export * from './LimitEnforcer';
+export * from './RegistrationAPI.js';
+export * from './DataValidator.js';
+export * from './UserService.js';
+export * from './SubscriptionManager.js';
+export * from './EmailService.js';
+export * from './LimitEnforcer.js';

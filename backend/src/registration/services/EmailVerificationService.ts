@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { eq } from 'drizzle-orm';
 import { db, verificationTokens } from '../../db/client.js';
-import type { EmailService } from '../interfaces/EmailService';
-import type { TokenValidation } from '../models';
+import type { EmailService } from '../interfaces/EmailService.js';
+import type { TokenValidation } from '../models/index.js';
 
 /**
  * Simple EmailService implementation.
@@ -14,8 +14,7 @@ export class EmailVerificationService implements EmailService {
   private readonly frontendUrl: string;
 
   constructor() {
-    this.frontendUrl =
-      process.env.FRONTEND_URL ?? 'http://localhost:3000';
+    this.frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
   }
 
   async sendVerificationEmail(
@@ -96,4 +95,3 @@ export class EmailVerificationService implements EmailService {
       .where(eq(verificationTokens.token, token));
   }
 }
-

@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { ValidationService } from '../services/ValidationService';
-import { EmailVerificationService } from '../services/EmailVerificationService';
-import { RegistrationService } from '../services/RegistrationService';
+import { ValidationService } from '../services/ValidationService.js';
+import { EmailVerificationService } from '../services/EmailVerificationService.js';
+import { RegistrationService } from '../services/RegistrationService.js';
 
 const router = Router();
 
@@ -77,4 +77,3 @@ router.post('/resend', async (req, res, next) => {
 });
 
 export default router;
-

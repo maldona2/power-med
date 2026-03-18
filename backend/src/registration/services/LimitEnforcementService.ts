@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db, users, patientCounts } from '../../db/client.js';
-import type { LimitEnforcer } from '../interfaces/LimitEnforcer';
+import type { LimitEnforcer } from '../interfaces/LimitEnforcer.js';
 
 const FREE_TIER_PATIENT_LIMIT = 5;
 const DEFAULT_PAID_PATIENT_LIMIT = 50;
@@ -99,4 +99,3 @@ export class LimitEnforcementService implements LimitEnforcer {
     return DEFAULT_PAID_PATIENT_LIMIT;
   }
 }
-

@@ -1,4 +1,4 @@
-import { UserData, User, UserUpdates } from '../models';
+import { UserData, User, UserUpdates } from '../models/index.js';
 
 /**
  * User Service interface

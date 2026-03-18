@@ -36,7 +36,9 @@ export async function login(
   }
 
   if (!user.isVerified) {
-    const err = new Error('Email no verificado. Revisa tu bandeja de entrada para verificar tu cuenta.');
+    const err = new Error(
+      'Email no verificado. Revisa tu bandeja de entrada para verificar tu cuenta.'
+    );
     (err as Error & { statusCode?: number }).statusCode = 401;
     throw err;
   }

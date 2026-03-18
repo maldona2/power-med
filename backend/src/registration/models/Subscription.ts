@@ -4,7 +4,7 @@
 export enum SubscriptionTier {
   FREE = 'free',
   BASIC = 'basic',
-  PREMIUM = 'premium'
+  PREMIUM = 'premium',
 }
 
 /**
@@ -14,7 +14,7 @@ export enum SubscriptionStatus {
   ACTIVE = 'active',
   EXPIRED = 'expired',
   CANCELLED = 'cancelled',
-  PENDING = 'pending'
+  PENDING = 'pending',
 }
 
 /**
@@ -23,7 +23,7 @@ export enum SubscriptionStatus {
 export enum ResourceType {
   PATIENTS = 'patients',
   CALENDAR = 'calendar',
-  APPOINTMENTS = 'appointments'
+  APPOINTMENTS = 'appointments',
 }
 
 /**

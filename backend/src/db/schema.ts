@@ -746,9 +746,7 @@ export const patientCounts = pgTable(
     count: integer('count').notNull().default(0),
     lastUpdated: timestamp('last_updated', { withTimezone: true }).defaultNow(),
   },
-  (table) => [
-    index('idx_patient_counts_user_id').on(table.userId),
-  ]
+  (table) => [index('idx_patient_counts_user_id').on(table.userId)]
 );
 
 export type PatientCount = typeof patientCounts.$inferSelect;
@@ -770,12 +768,15 @@ export const webhookEventsRelations = relations(webhookEvents, ({ one }) => ({
   }),
 }));
 
-export const verificationTokensRelations = relations(verificationTokens, ({ one }) => ({
-  user: one(users, {
-    fields: [verificationTokens.userId],
-    references: [users.id],
-  }),
-}));
+export const verificationTokensRelations = relations(
+  verificationTokens,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [verificationTokens.userId],
+      references: [users.id],
+    }),
+  })
+);
 
 export const patientCountsRelations = relations(patientCounts, ({ one }) => ({
   user: one(users, {

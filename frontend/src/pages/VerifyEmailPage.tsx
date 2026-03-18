@@ -26,7 +26,9 @@ export function VerifyEmailPage() {
       .then(({ data }) => {
         if (data?.success) {
           setStatus('success');
-          setMessage('Email verificado correctamente. Ya puedes iniciar sesión.');
+          setMessage(
+            'Email verificado correctamente. Ya puedes iniciar sesión.'
+          );
         } else {
           setStatus('error');
           setMessage(data?.message || 'No se pudo verificar el email.');
@@ -74,4 +76,3 @@ export function VerifyEmailPage() {
     </div>
   );
 }
-

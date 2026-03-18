@@ -1,4 +1,4 @@
-import { RegistrationData, ValidationResult } from '../models';
+import { RegistrationData, ValidationResult } from '../models/index.js';
 
 /**
  * Data Validator interface
@@ -39,5 +39,8 @@ export interface DataValidator {
    * @param confirmPassword - Password confirmation
    * @returns Validation result
    */
-  validatePasswordConfirmation(password: string, confirmPassword: string): ValidationResult;
+  validatePasswordConfirmation(
+    password: string,
+    confirmPassword: string
+  ): ValidationResult;
 }

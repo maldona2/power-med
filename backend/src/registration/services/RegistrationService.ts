@@ -15,12 +15,12 @@ import type {
   ResendResponse,
   RegistrationData,
   User,
-} from '../models';
+} from '../models/index.js';
 import type {
   RegistrationAPI,
   DataValidator,
   EmailService,
-} from '../interfaces';
+} from '../interfaces/index.js';
 
 /**
  * Concrete implementation of the RegistrationAPI.
@@ -244,7 +244,8 @@ export class RegistrationService implements RegistrationAPI {
     if (!user) {
       return {
         success: false,
-        message: 'If an account exists for this email, a verification link will be sent.',
+        message:
+          'If an account exists for this email, a verification link will be sent.',
       };
     }
 
@@ -280,4 +281,3 @@ export class RegistrationService implements RegistrationAPI {
     };
   }
 }
-

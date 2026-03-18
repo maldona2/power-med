@@ -60,8 +60,11 @@ export function RegistrationPage() {
         err &&
         typeof err === 'object' &&
         'response' in err &&
-        (err as { response?: { data?: { message?: string; errors?: string[] } } })
-          .response?.data;
+        (
+          err as {
+            response?: { data?: { message?: string; errors?: string[] } };
+          }
+        ).response?.data;
       setError(
         (data as { errors?: string[] } | undefined)?.errors?.join(', ') ||
           (data as { message?: string })?.message ||
@@ -197,9 +200,7 @@ export function RegistrationPage() {
               </div>
 
               {error && <FieldError>{error}</FieldError>}
-              {success && (
-                <p className="text-xs text-emerald-600">{success}</p>
-              )}
+              {success && <p className="text-xs text-emerald-600">{success}</p>}
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Creando cuenta...' : 'Crear cuenta gratis'}
@@ -211,4 +212,3 @@ export function RegistrationPage() {
     </div>
   );
 }
-

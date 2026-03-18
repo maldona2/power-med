@@ -1,4 +1,9 @@
-import { RegistrationRequest, RegistrationResponse, VerificationResponse, ResendResponse } from '../models';
+import {
+  RegistrationRequest,
+  RegistrationResponse,
+  VerificationResponse,
+  ResendResponse,
+} from '../models/index.js';
 
 /**
  * Registration API interface
@@ -10,7 +15,9 @@ export interface RegistrationAPI {
    * @param registrationData - The registration data from the user
    * @returns Promise resolving to registration response
    */
-  registerUser(registrationData: RegistrationRequest): Promise<RegistrationResponse>;
+  registerUser(
+    registrationData: RegistrationRequest
+  ): Promise<RegistrationResponse>;
 
   /**
    * Verify a user's email using verification token

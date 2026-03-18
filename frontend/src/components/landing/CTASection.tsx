@@ -14,12 +14,7 @@ export function CTASection() {
           médicos y clínicas que ya confían en Atriax.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button
-            size="lg"
-            variant="secondary"
-            className="gap-2"
-            asChild
-          >
+          <Button size="lg" variant="secondary" className="gap-2" asChild>
             <Link to="/register">
               Comenzar prueba gratis
               <ArrowRight className="h-4 w-4" />
