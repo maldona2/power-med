@@ -10,7 +10,7 @@ const professionalOnly = [authenticate, requireRole('professional')];
 const createSessionSchema = z.object({
   appointment_id: z.string().uuid(),
   patient_id: z.string().uuid(),
-  procedures_performed: z.string().min(1),
+  procedures_performed: z.string().optional().default(''),
   recommendations: z.string().optional().nullable(),
   next_visit_notes: z.string().optional().nullable(),
 });
@@ -19,7 +19,7 @@ const updateSessionSchema = createSessionSchema
   .omit({ appointment_id: true, patient_id: true })
   .partial()
   .extend({
-    procedures_performed: z.string().min(1).optional(),
+    procedures_performed: z.string().optional(),
   });
 
 function getTenantId(req: Request): string {

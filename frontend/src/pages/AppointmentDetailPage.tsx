@@ -29,6 +29,7 @@ export function AppointmentDetailPage() {
   const [procedures, setProcedures] = useState('');
   const [recommendations, setRecommendations] = useState('');
   const [savingSession, setSavingSession] = useState(false);
+  const [creatingSession, setCreatingSession] = useState(false);
 
   if (loading) {
     return <p className="text-muted-foreground">Cargando...</p>;
@@ -49,7 +50,8 @@ export function AppointmentDetailPage() {
     if (!detail) return;
     try {
       await api.put(`/appointments/${detail.id}`, { status });
-      toast.success('Estado actualizado, recarga para ver cambios');
+      toast.success('Estado actualizado');
+      refetch();
     } catch {
       toast.error('No se pudo actualizar el estado');
     }
@@ -107,22 +109,38 @@ export function AppointmentDetailPage() {
 
           <div className="space-x-2">
             {detail.status !== 'pending' && (
-              <Button variant="outline" size="sm" onClick={() => changeStatus('pending')}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => changeStatus('pending')}
+              >
                 Marcar pendiente
               </Button>
             )}
             {detail.status !== 'confirmed' && (
-              <Button variant="outline" size="sm" onClick={() => changeStatus('confirmed')}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => changeStatus('confirmed')}
+              >
                 Confirmar
               </Button>
             )}
             {detail.status !== 'completed' && (
-              <Button variant="outline" size="sm" onClick={() => changeStatus('completed')}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => changeStatus('completed')}
+              >
                 Completar
               </Button>
             )}
             {detail.status !== 'cancelled' && (
-              <Button variant="outline" size="sm" onClick={() => changeStatus('cancelled')}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => changeStatus('cancelled')}
+              >
                 Cancelar
               </Button>
             )}
@@ -144,13 +162,17 @@ export function AppointmentDetailPage() {
               <div className="space-y-2 text-sm">
                 {detail.procedures_performed && (
                   <p>
-                    <span className="text-muted-foreground">Procedimientos:</span>{' '}
+                    <span className="text-muted-foreground">
+                      Procedimientos:
+                    </span>{' '}
                     {detail.procedures_performed}
                   </p>
                 )}
                 {detail.recommendations && (
                   <p>
-                    <span className="text-muted-foreground">Recomendaciones:</span>{' '}
+                    <span className="text-muted-foreground">
+                      Recomendaciones:
+                    </span>{' '}
                     {detail.recommendations}
                   </p>
                 )}
@@ -158,46 +180,81 @@ export function AppointmentDetailPage() {
             </>
           )}
 
-          {detail.session_id && (
-            <>
-              <Separator />
+          <>
+            <Separator />
+            {detail.session_id ? (
               <SessionPhotoGallery sessionId={detail.session_id} />
-            </>
-          )}
-
-          {detail.status === 'completed' && !detail.procedures_performed && !detail.recommendations && (
-            <>
-              <Separator />
-              <form onSubmit={saveSession} className="space-y-3 text-sm">
-                <p className="font-medium">Registrar sesión</p>
-                <div className="space-y-1">
-                  <label className="text-muted-foreground" htmlFor="procedures">
-                    Procedimientos realizados
-                  </label>
-                  <Textarea
-                    id="procedures"
-                    value={procedures}
-                    onChange={(e) => setProcedures(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-muted-foreground" htmlFor="recommendations">
-                    Recomendaciones / próxima visita (opcional)
-                  </label>
-                  <Textarea
-                    id="recommendations"
-                    value={recommendations}
-                    onChange={(e) => setRecommendations(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-                <Button type="submit" size="sm" disabled={savingSession}>
-                  {savingSession ? 'Guardando...' : 'Guardar sesión'}
+            ) : (
+              <div className="flex flex-col items-start gap-2">
+                <p className="text-sm text-muted-foreground">
+                  Iniciá una sesión para poder subir fotos.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={creatingSession}
+                  onClick={async () => {
+                    setCreatingSession(true);
+                    try {
+                      await api.post('/sessions', {
+                        appointment_id: detail.id,
+                        patient_id: detail.patient_id,
+                      });
+                      refetch();
+                    } catch {
+                      toast.error('No se pudo crear la sesión');
+                    } finally {
+                      setCreatingSession(false);
+                    }
+                  }}
+                >
+                  {creatingSession ? 'Creando...' : 'Iniciar sesión'}
                 </Button>
-              </form>
-            </>
-          )}
+              </div>
+            )}
+          </>
+
+          {detail.status === 'completed' &&
+            !detail.procedures_performed &&
+            !detail.recommendations && (
+              <>
+                <Separator />
+                <form onSubmit={saveSession} className="space-y-3 text-sm">
+                  <p className="font-medium">Registrar sesión</p>
+                  <div className="space-y-1">
+                    <label
+                      className="text-muted-foreground"
+                      htmlFor="procedures"
+                    >
+                      Procedimientos realizados
+                    </label>
+                    <Textarea
+                      id="procedures"
+                      value={procedures}
+                      onChange={(e) => setProcedures(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label
+                      className="text-muted-foreground"
+                      htmlFor="recommendations"
+                    >
+                      Recomendaciones / próxima visita (opcional)
+                    </label>
+                    <Textarea
+                      id="recommendations"
+                      value={recommendations}
+                      onChange={(e) => setRecommendations(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <Button type="submit" size="sm" disabled={savingSession}>
+                    {savingSession ? 'Guardando...' : 'Guardar sesión'}
+                  </Button>
+                </form>
+              </>
+            )}
         </CardContent>
       </Card>
     </div>

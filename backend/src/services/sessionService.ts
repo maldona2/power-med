@@ -16,7 +16,7 @@ export interface SessionRow {
 export interface CreateSessionInput {
   appointment_id: string;
   patient_id: string;
-  procedures_performed: string;
+  procedures_performed?: string;
   recommendations?: string | null;
   next_visit_notes?: string | null;
 }
@@ -45,7 +45,7 @@ export async function create(
       tenantId,
       appointmentId: input.appointment_id,
       patientId: input.patient_id,
-      proceduresPerformed: input.procedures_performed,
+      proceduresPerformed: input.procedures_performed ?? '',
       recommendations: input.recommendations ?? null,
       nextVisitNotes: input.next_visit_notes ?? null,
     })
