@@ -504,6 +504,7 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   googleCalendarTokens: many(googleCalendarTokens),
   calendarSyncStatus: many(calendarSyncStatus),
   calendarSyncQueue: many(calendarSyncQueue),
+  sessionPhotos: many(sessionPhotos),
 }));
 
 export const usersRelations = relations(users, ({ one }) => ({
@@ -523,6 +524,7 @@ export const patientsRelations = relations(patients, ({ one, many }) => ({
   medicalConditions: many(medicalConditions),
   medications: many(medications),
   allergies: many(allergies),
+  sessionPhotos: many(sessionPhotos),
 }));
 
 export const appointmentsRelations = relations(
@@ -585,7 +587,7 @@ export const appointmentTreatmentsRelations = relations(
   })
 );
 
-export const sessionsRelations = relations(sessions, ({ one }) => ({
+export const sessionsRelations = relations(sessions, ({ one, many }) => ({
   tenant: one(tenants, {
     fields: [sessions.tenantId],
     references: [tenants.id],
@@ -598,6 +600,7 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
     fields: [sessions.patientId],
     references: [patients.id],
   }),
+  sessionPhotos: many(sessionPhotos),
 }));
 
 export const medicalConditionsRelations = relations(
@@ -885,3 +888,58 @@ export const passwordResetTokensRelations = relations(
     }),
   })
 );
+
+// ─── session_photos ──────────────────────────────────────────────────────────
+
+export const sessionPhotos = pgTable(
+  'session_photos',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => sessions.id, { onDelete: 'cascade' }),
+    patientId: uuid('patient_id')
+      .notNull()
+      .references(() => patients.id, { onDelete: 'cascade' }),
+    s3Key: text('s3_key').notNull(),
+    fileName: text('file_name').notNull(),
+    fileSizeBytes: integer('file_size_bytes').notNull(),
+    mimeType: text('mime_type', {
+      enum: ['image/jpeg', 'image/png', 'image/webp'],
+    }).notNull(),
+    status: text('status', { enum: ['pending', 'confirmed'] })
+      .notNull()
+      .default('pending'),
+    uploadedAt: timestamp('uploaded_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index('idx_session_photos_tenant').on(table.tenantId),
+    index('idx_session_photos_session').on(table.sessionId),
+    index('idx_session_photos_status').on(table.status),
+    index('idx_session_photos_created_at').on(table.createdAt),
+  ]
+);
+
+export type SessionPhoto = typeof sessionPhotos.$inferSelect;
+export type NewSessionPhoto = typeof sessionPhotos.$inferInsert;
+
+export const sessionPhotosRelations = relations(sessionPhotos, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [sessionPhotos.tenantId],
+    references: [tenants.id],
+  }),
+  session: one(sessions, {
+    fields: [sessionPhotos.sessionId],
+    references: [sessions.id],
+  }),
+  patient: one(patients, {
+    fields: [sessionPhotos.patientId],
+    references: [patients.id],
+  }),
+}));

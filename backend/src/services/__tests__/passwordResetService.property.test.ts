@@ -311,12 +311,10 @@ describe('passwordResetService property-based tests', () => {
     app.post('/api/auth/forgot-password', async (req, res, next) => {
       try {
         await svc.requestPasswordReset(req.body.email as string);
-        res
-          .status(200)
-          .json({
-            message:
-              'Si el email est\u00e1 registrado, recibir\u00e1s un enlace en breve.',
-          });
+        res.status(200).json({
+          message:
+            'Si el email est\u00e1 registrado, recibir\u00e1s un enlace en breve.',
+        });
       } catch (e) {
         next(e);
       }

@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { SessionPhotoGallery } from '@/components/sessions/SessionPhotoGallery';
 
 const statusLabels: Record<string, string> = {
   pending: 'Pendiente',
@@ -171,6 +172,13 @@ export function AppointmentDetailPage() {
                   </p>
                 )}
               </div>
+            </>
+          )}
+
+          {detail.session_id && (
+            <>
+              <Separator />
+              <SessionPhotoGallery sessionId={detail.session_id} />
             </>
           )}
 

@@ -10,6 +10,7 @@ import {
 import { initializeSubscriptionSystem } from './subscriptions/init.js';
 import { runMonthlyBillingReset } from './subscriptions/services/BillingResetJob.js';
 import { runDailyRecordingReset } from './subscriptions/services/DailyRecordingResetJob.js';
+import { runCleanupPendingPhotos } from './jobs/cleanupPendingPhotos.js';
 
 dotenv.config();
 
@@ -78,6 +79,10 @@ function setupScheduledJobs() {
         logger.error({ error }, 'Monthly billing reset job failed');
       });
   });
+
+  // Every 30 minutes — delete stale pending photos
+  runCleanupPendingPhotos();
+  setInterval(() => void runCleanupPendingPhotos(), 30 * 60 * 1000);
 
   logger.info('Scheduled jobs configured successfully');
 }

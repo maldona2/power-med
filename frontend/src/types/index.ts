@@ -76,6 +76,16 @@ export type {
   TreatmentLineItem,
 } from './treatments';
 
+// Session photo types
+export interface SessionPhoto {
+  id: string;
+  file_name: string;
+  file_size_bytes: number;
+  mime_type: string;
+  uploaded_at: string | null;
+  presigned_url: string;
+}
+
 // Admin types
 export interface Tenant {
   id: string;

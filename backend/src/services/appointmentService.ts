@@ -97,6 +97,7 @@ export interface AppointmentRow {
 export interface AppointmentDetail extends AppointmentRow {
   procedures_performed?: string | null;
   recommendations?: string | null;
+  session_id?: string | null;
   treatments?: AppointmentTreatmentRow[];
 }
 
@@ -221,6 +222,7 @@ export async function getById(
       lastName: patients.lastName,
       proceduresPerformed: sessions.proceduresPerformed,
       recommendations: sessions.recommendations,
+      sessionId: sessions.id,
     })
     .from(appointments)
     .innerJoin(patients, eq(patients.id, appointments.patientId))
@@ -269,6 +271,7 @@ export async function getById(
     ),
     procedures_performed: row.proceduresPerformed ?? null,
     recommendations: row.recommendations ?? null,
+    session_id: row.sessionId ?? null,
     treatments: treatmentItems,
   };
 }

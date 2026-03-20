@@ -60,6 +60,7 @@ import allergiesRoutes from './routes/allergies.js';
 import googleCalendarRoutes from './routes/googleCalendar.js';
 import subscriptionRoutes from './subscriptions/api/routes.js';
 import registrationRoutes from './registration/api/routes.js';
+import sessionPhotosRoutes from './routes/sessionPhotos.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -71,6 +72,7 @@ app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/treatments', treatmentsRoutes);
 app.use('/api/patient-treatments', patientTreatmentsRoutes);
 app.use('/api/sessions', sessionsRoutes);
+app.use('/api/sessions/:sessionId/photos', sessionPhotosRoutes);
 app.use('/api', googleCalendarRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/registration', registrationRoutes);
