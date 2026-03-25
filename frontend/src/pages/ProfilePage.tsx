@@ -976,7 +976,7 @@ export function ProfilePage() {
 
             {/* Subscription Plans */}
             <div className="space-y-6">
-              <div className="text-center">
+              <div className="text-center pb-2">
                 <h2 className="text-2xl font-bold tracking-tight">
                   Elige tu plan
                 </h2>
@@ -1050,7 +1050,7 @@ export function ProfilePage() {
                   </div>
                   <div className="mb-6">
                     <span className="text-4xl font-bold tracking-tight">
-                      $1500
+                      $30.000
                     </span>
                     <span className="text-muted-foreground">/mes</span>
                   </div>
@@ -1096,7 +1096,7 @@ export function ProfilePage() {
                   </div>
                   <div className="mb-6">
                     <span className="text-4xl font-bold tracking-tight">
-                      $30000
+                      $50.000
                     </span>
                     <span className="text-muted-foreground">/mes</span>
                   </div>

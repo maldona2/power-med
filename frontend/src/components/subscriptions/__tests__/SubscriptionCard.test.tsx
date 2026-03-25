@@ -7,7 +7,7 @@ describe('SubscriptionCard', () => {
   const mockPlan: SubscriptionPlan = {
     name: 'pro',
     displayName: 'Pro',
-    priceARS: 15000,
+    priceARS: 30000,
     limits: {
       clinicalNotesMonthly: 100,
       recordingMinutesDaily: 120,

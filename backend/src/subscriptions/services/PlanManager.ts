@@ -13,7 +13,7 @@ export const FREE_PLAN_DAILY_APPOINTMENT_LIMIT = 3;
 const PLANS: Record<PlanName, SubscriptionPlan> = {
   pro: {
     name: 'pro',
-    priceARS: 1500,
+    priceARS: 30000,
     dailyAppointmentLimit: 50,
     features: {
       calendarSync: true,
@@ -24,7 +24,7 @@ const PLANS: Record<PlanName, SubscriptionPlan> = {
   },
   gold: {
     name: 'gold',
-    priceARS: 30000,
+    priceARS: 50000,
     dailyAppointmentLimit: SENTINEL_VALUE, // -1 = unlimited
     features: {
       calendarSync: true,

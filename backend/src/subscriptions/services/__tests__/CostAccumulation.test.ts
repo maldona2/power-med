@@ -110,7 +110,7 @@ describe('Cost Accumulation and Enforcement Integration', () => {
         .limit(1);
 
       expect(parseFloat(user.costUsedMonthlyUsd)).toBe(0.06);
-      expect(user.tokensUsedMonthly).toBe(1500);
+      expect(user.tokensUsedMonthly).toBe(30000);
     });
 
     it('should accumulate costs across multiple API calls', async () => {
@@ -179,7 +179,7 @@ describe('Cost Accumulation and Enforcement Integration', () => {
 
       await usageEnforcer.incrementTokenUsage(
         testUserId,
-        1500,
+        30000,
         costCalculation.totalCost
       );
 
@@ -190,7 +190,7 @@ describe('Cost Accumulation and Enforcement Integration', () => {
         .limit(1);
 
       expect(parseFloat(user.costUsedMonthlyUsd)).toBe(0.06);
-      expect(user.tokensUsedMonthly).toBe(1500);
+      expect(user.tokensUsedMonthly).toBe(30000);
     });
   });
 
@@ -258,7 +258,7 @@ describe('Cost Accumulation and Enforcement Integration', () => {
       expect(check.allowed).toBe(true);
 
       // Record the usage
-      await usageEnforcer.incrementTokenUsage(testUserId, 1500, 0.06);
+      await usageEnforcer.incrementTokenUsage(testUserId, 30000, 0.06);
 
       // Second call: should be rejected (9.96 + 0.06 = 10.02 > 10.00)
       check = await usageEnforcer.checkCostLimit(testUserId, 0.06);
@@ -399,7 +399,7 @@ describe('Cost Accumulation and Enforcement Integration', () => {
 
       // Should have reset to just the new call's cost
       expect(parseFloat(user.costUsedMonthlyUsd)).toBeCloseTo(0.06, 4);
-      expect(user.tokensUsedMonthly).toBe(1500);
+      expect(user.tokensUsedMonthly).toBe(30000);
       expect(user.billingMonth).not.toBe('2023-01');
     });
   });
