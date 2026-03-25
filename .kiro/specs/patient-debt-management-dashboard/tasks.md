@@ -8,33 +8,33 @@ The implementation follows the existing architecture patterns: TypeScript backen
 
 ## Tasks
 
-- [ ] 1. Set up database schema and migrations
-  - [ ] 1.1 Create payment_records table schema
+- [x] 1. Set up database schema and migrations
+  - [x] 1.1 Create payment_records table schema
     - Add payment_records table to backend/src/db/schema.ts with all fields (id, tenantId, patientId, appointmentId, amountCents, paymentMethod, paymentDate, notes, timestamps)
     - Add indexes for tenantId, patientId, and paymentDate
     - Add foreign key relationships to tenants, patients, and appointments tables
     - _Requirements: 1.1, 1.3, 8.1, 10.1_
   
-  - [ ] 1.2 Create payment_plans table schema
+  - [x] 1.2 Create payment_plans table schema
     - Add payment_plans table to backend/src/db/schema.ts with all fields (id, tenantId, patientId, totalAmountCents, installmentAmountCents, frequency, startDate, nextPaymentDate, status, onTimePayments, latePayments, timestamps)
     - Add indexes for tenantId, patientId, and status
     - Add foreign key relationships to tenants and patients tables
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
   
-  - [ ] 1.3 Generate and test database migration
+  - [x] 1.3 Generate and test database migration
     - Create Drizzle migration file for both new tables
     - Test migration runs successfully on development database
     - Verify all indexes and foreign keys are created correctly
     - _Requirements: 1.1, 5.1_
 
-- [ ] 2. Implement backend service layer
-  - [ ] 2.1 Create DebtDashboardService class
+- [x] 2. Implement backend service layer
+  - [x] 2.1 Create DebtDashboardService class
     - Create backend/src/services/debtDashboardService.ts
     - Implement constructor with database dependency injection
     - Add tenant isolation helper methods
     - _Requirements: 10.1, 10.2, 10.3_
   
-  - [ ] 2.2 Implement calculateStatistics method
+  - [x] 2.2 Implement calculateStatistics method
     - Query payment_records and appointments tables with tenant filtering
     - Calculate totalPaidCents, totalUnpaidCents, collectionRate
     - Calculate patientsWithBalance and averageDebtCents
@@ -47,7 +47,7 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Test that totalPaidCents + totalUnpaidCents equals total debt across all patients
     - Test that collectionRate = (totalPaidCents / (totalPaidCents + totalUnpaidCents)) * 100
   
-  - [ ] 2.4 Implement generateAgingReport method
+  - [x] 2.4 Implement generateAgingReport method
     - Query unpaid debts and calculate days outstanding
     - Categorize into buckets: 0-30, 31-60, 61-90, 90+ days
     - Calculate totalAmountCents, patientCount, and percentage for each bucket
@@ -60,7 +60,7 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Test that sum of all bucket patient counts equals total patients with unpaid debt
     - Test that all percentages sum to 100%
   
-  - [ ] 2.6 Implement getPaymentPlans method
+  - [x] 2.6 Implement getPaymentPlans method
     - Query payment_plans table with tenant filtering
     - Support optional status filtering
     - Join with patients table to get patient names
@@ -73,7 +73,7 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Test that completionPercentage is always between 0 and 100
     - Test that completed plans have completionPercentage = 100
   
-  - [ ] 2.8 Implement getPaymentHistory method
+  - [x] 2.8 Implement getPaymentHistory method
     - Query payment_records with complex filtering (patientId, date range, payment status, amount range, search)
     - Aggregate payments by patient
     - Calculate totalDebtCents, paidCents, unpaidCents per patient
@@ -88,7 +88,7 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Test that status='unpaid' when paidCents = 0
     - Test that status='partially_paid' when both paidCents > 0 and unpaidCents > 0
   
-  - [ ] 2.10 Implement getPaymentMethodAnalytics method
+  - [x] 2.10 Implement getPaymentMethodAnalytics method
     - Query payment_records grouped by paymentMethod
     - Calculate totalAmountCents, transactionCount, averageAmountCents per method
     - Calculate percentage of total for each method
@@ -103,41 +103,41 @@ The implementation follows the existing architecture patterns: TypeScript backen
 - [ ] 3. Checkpoint - Ensure service layer tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Implement backend API routes
-  - [ ] 4.1 Create debt-dashboard routes file
+- [x] 4. Implement backend API routes
+  - [x] 4.1 Create debt-dashboard routes file
     - Create backend/src/routes/debtDashboard.ts
     - Set up Express router with authentication middleware
     - Add tenant extraction from authenticated user
     - _Requirements: 10.1, 10.2_
   
-  - [ ] 4.2 Implement GET /api/debt-dashboard/statistics endpoint
+  - [x] 4.2 Implement GET /api/debt-dashboard/statistics endpoint
     - Add route handler with optional startDate/endDate query params
     - Validate query parameters using Zod schema
     - Call debtDashboardService.calculateStatistics
     - Return JSON response with statistics and lastUpdated timestamp
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
   
-  - [ ] 4.3 Implement GET /api/debt-dashboard/aging-report endpoint
+  - [x] 4.3 Implement GET /api/debt-dashboard/aging-report endpoint
     - Add route handler
     - Call debtDashboardService.generateAgingReport
     - Return JSON response with buckets and lastUpdated timestamp
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
   
-  - [ ] 4.4 Implement GET /api/debt-dashboard/payment-plans endpoint
+  - [x] 4.4 Implement GET /api/debt-dashboard/payment-plans endpoint
     - Add route handler with optional status query param
     - Validate status parameter
     - Call debtDashboardService.getPaymentPlans
     - Return JSON response with plans array
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
   
-  - [ ] 4.5 Implement GET /api/debt-dashboard/payment-history endpoint
+  - [x] 4.5 Implement GET /api/debt-dashboard/payment-history endpoint
     - Add route handler with multiple query params (patientId, startDate, endDate, paymentStatus, minAmount, maxAmount, search)
     - Validate all query parameters using Zod schema
     - Call debtDashboardService.getPaymentHistory
     - Return JSON response with records array and totalCount
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
   
-  - [ ] 4.6 Implement GET /api/debt-dashboard/payment-methods endpoint
+  - [x] 4.6 Implement GET /api/debt-dashboard/payment-methods endpoint
     - Add route handler
     - Call debtDashboardService.getPaymentMethodAnalytics
     - Return JSON response with methods array
@@ -151,7 +151,7 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Return file buffer as response
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
   
-  - [ ] 4.8 Register debt-dashboard routes in app.ts
+  - [x] 4.8 Register debt-dashboard routes in app.ts
     - Import debtDashboard router
     - Mount router at /api/debt-dashboard path
     - Ensure authentication middleware is applied
@@ -200,14 +200,14 @@ The implementation follows the existing architecture patterns: TypeScript backen
 - [ ] 6. Checkpoint - Ensure backend implementation is complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Create frontend TypeScript types and API client
-  - [ ] 7.1 Define TypeScript interfaces
+- [x] 7. Create frontend TypeScript types and API client
+  - [x] 7.1 Define TypeScript interfaces
     - Create frontend/src/types/debtDashboard.ts
     - Define PaymentRecord, PaymentPlan, PaymentStatistics, AgingReport, PatientPaymentRecord, PaymentMethodAnalytics interfaces
     - Define PaymentHistoryFilters, ExportRequest types
     - _Requirements: 1.1, 1.3, 2.1, 4.1, 5.1, 8.1_
   
-  - [ ] 7.2 Create API client functions
+  - [x] 7.2 Create API client functions
     - Create frontend/src/lib/debtDashboardApi.ts
     - Implement fetchStatistics(startDate?, endDate?)
     - Implement fetchAgingReport()
@@ -218,42 +218,42 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Add proper error handling and type safety
     - _Requirements: 1.1, 2.1, 4.1, 5.1, 7.1, 7.2, 8.1_
 
-- [ ] 8. Create custom React hooks for data fetching
-  - [ ] 8.1 Create useDebtStatistics hook
+- [x] 8. Create custom React hooks for data fetching
+  - [x] 8.1 Create useDebtStatistics hook
     - Create frontend/src/hooks/useDebtStatistics.ts
     - Implement hook with optional date range parameters
     - Handle loading, error, and data states
     - Implement auto-refresh every 5 seconds
     - _Requirements: 2.1, 9.1, 9.2, 9.4_
   
-  - [ ] 8.2 Create useAgingReport hook
+  - [x] 8.2 Create useAgingReport hook
     - Create frontend/src/hooks/useAgingReport.ts
     - Implement hook with auto-refresh
     - Handle loading, error, and data states
     - _Requirements: 4.1, 9.1, 9.2, 9.4_
   
-  - [ ] 8.3 Create usePaymentPlans hook
+  - [x] 8.3 Create usePaymentPlans hook
     - Create frontend/src/hooks/usePaymentPlans.ts
     - Implement hook with optional status filter
     - Handle loading, error, and data states
     - Implement auto-refresh every 5 seconds
     - _Requirements: 5.1, 9.1, 9.2, 9.4_
   
-  - [ ] 8.4 Create usePaymentHistory hook
+  - [x] 8.4 Create usePaymentHistory hook
     - Create frontend/src/hooks/usePaymentHistory.ts
     - Implement hook with filters parameter
     - Handle loading, error, and data states
     - Implement debounced search to avoid excessive API calls
     - _Requirements: 1.1, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 9.1, 9.2_
   
-  - [ ] 8.5 Create usePaymentMethodAnalytics hook
+  - [x] 8.5 Create usePaymentMethodAnalytics hook
     - Create frontend/src/hooks/usePaymentMethodAnalytics.ts
     - Implement hook with auto-refresh
     - Handle loading, error, and data states
     - _Requirements: 8.1, 9.1, 9.2, 9.4_
 
-- [ ] 9. Implement frontend UI components - Statistics and Charts
-  - [ ] 9.1 Create PaymentStatisticsCard component
+- [x] 9. Implement frontend UI components - Statistics and Charts
+  - [x] 9.1 Create PaymentStatisticsCard component
     - Create frontend/src/components/debt-dashboard/PaymentStatisticsCard.tsx
     - Display totalPaidCents, totalUnpaidCents, collectionRate, patientsWithBalance, averageDebtCents
     - Format currency values properly (cents to dollars)
@@ -262,7 +262,7 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Use shadcn/ui Card component
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 9.4_
   
-  - [ ] 9.2 Create PaymentChartsSection component
+  - [x] 9.2 Create PaymentChartsSection component
     - Create frontend/src/components/debt-dashboard/PaymentChartsSection.tsx
     - Implement chart type toggle (pie, bar, line)
     - Use Recharts library for all visualizations
@@ -280,8 +280,8 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Test tooltips display on hover
     - _Requirements: 3.4, 3.5_
 
-- [ ] 10. Implement frontend UI components - Aging Report
-  - [ ] 10.1 Create AgingReportTable component
+- [x] 10. Implement frontend UI components - Aging Report
+  - [x] 10.1 Create AgingReportTable component
     - Create frontend/src/components/debt-dashboard/AgingReportTable.tsx
     - Display aging buckets in table format with columns: Range, Amount, Patient Count, Percentage
     - Highlight 90+ days bucket with warning color
@@ -290,7 +290,7 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Use shadcn/ui Table component
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
   
-  - [ ] 10.2 Create AgingReportPatientList component
+  - [x] 10.2 Create AgingReportPatientList component
     - Create frontend/src/components/debt-dashboard/AgingReportPatientList.tsx
     - Display filtered patient list when aging bucket is clicked
     - Show patient name, total debt, days outstanding
@@ -298,8 +298,8 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Use shadcn/ui Dialog or Sheet component
     - _Requirements: 4.4_
 
-- [ ] 11. Implement frontend UI components - Payment Plans
-  - [ ] 11.1 Create PaymentPlanList component
+- [x] 11. Implement frontend UI components - Payment Plans
+  - [x] 11.1 Create PaymentPlanList component
     - Create frontend/src/components/debt-dashboard/PaymentPlanList.tsx
     - Display payment plans in card or table format
     - Show patient name, total amount, installment amount, frequency, next payment date
@@ -316,8 +316,8 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Test status filter updates displayed plans
     - _Requirements: 5.2, 5.3_
 
-- [ ] 12. Implement frontend UI components - Payment History Table
-  - [ ] 12.1 Create PatientPaymentTable component
+- [x] 12. Implement frontend UI components - Payment History Table
+  - [x] 12.1 Create PatientPaymentTable component
     - Create frontend/src/components/debt-dashboard/PatientPaymentTable.tsx
     - Display patient payment records in sortable table
     - Columns: Patient Name, Total Debt, Paid, Unpaid, Status, Last Payment Date
@@ -327,7 +327,7 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Use shadcn/ui Table component with sorting
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
   
-  - [ ] 12.2 Create PaymentFilters component
+  - [x] 12.2 Create PaymentFilters component
     - Create frontend/src/components/debt-dashboard/PaymentFilters.tsx
     - Add search input for patient name/ID
     - Add payment status dropdown filter (all, paid, unpaid, partially_paid)
@@ -356,8 +356,8 @@ The implementation follows the existing architecture patterns: TypeScript backen
 - [ ] 13. Checkpoint - Ensure frontend components render correctly
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 14. Create main dashboard page and integrate components
-  - [ ] 14.1 Create DebtDashboardPage component
+- [x] 14. Create main dashboard page and integrate components
+  - [x] 14.1 Create DebtDashboardPage component
     - Create frontend/src/pages/DebtDashboardPage.tsx
     - Set up page layout with responsive grid
     - Integrate PaymentStatisticsCard at top
@@ -367,7 +367,7 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Use shadcn/ui Tabs component for navigation
     - _Requirements: 1.1, 2.1, 3.1, 4.1, 5.1, 9.3, 9.4, 9.5_
   
-  - [ ] 14.2 Integrate all data hooks in DebtDashboardPage
+  - [x] 14.2 Integrate all data hooks in DebtDashboardPage
     - Use useDebtStatistics hook for statistics section
     - Use useAgingReport hook for aging report section
     - Use usePaymentPlans hook for payment plans section
@@ -377,7 +377,7 @@ The implementation follows the existing architecture patterns: TypeScript backen
     - Handle error states with user-friendly messages
     - _Requirements: 9.1, 9.2, 9.3_
   
-  - [ ] 14.3 Add route for DebtDashboardPage
+  - [x] 14.3 Add route for DebtDashboardPage
     - Update frontend/src/App.tsx to add route for /debt-dashboard
     - Ensure route is protected (requires authentication)
     - Add navigation link in main menu/sidebar

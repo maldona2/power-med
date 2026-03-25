@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { Calendar, Syringe, Users } from 'lucide-react';
+import { Calendar, Syringe, Users, BarChart2 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardShell } from './DashboardShell';
@@ -20,6 +20,11 @@ export function AppLayout() {
             label: 'Tratamientos',
             icon: Syringe,
           },
+          {
+            to: '/app/debt-dashboard',
+            label: 'Deudas',
+            icon: BarChart2,
+          },
         ] as const)
       : ([
           { to: '/app/appointments', label: 'Turnos', icon: Calendar },
@@ -28,6 +33,11 @@ export function AppLayout() {
             to: '/app/profile?tab=treatments',
             label: 'Tratamientos',
             icon: Syringe,
+          },
+          {
+            to: '/app/debt-dashboard',
+            label: 'Deudas',
+            icon: BarChart2,
           },
         ] as const);
 

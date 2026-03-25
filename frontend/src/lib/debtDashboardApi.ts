@@ -1,0 +1,68 @@
+import api from './api';
+import type {
+  PaymentStatistics,
+  AgingReport,
+  PaymentPlan,
+  PatientAppointmentDetail,
+  PatientPaymentRecord,
+  PaymentMethodAnalytics,
+  PaymentHistoryFilters,
+} from '../types/debtDashboard';
+
+export async function fetchStatistics(
+  startDate?: string,
+  endDate?: string
+): Promise<PaymentStatistics> {
+  const params: Record<string, string> = {};
+  if (startDate) params.startDate = startDate;
+  if (endDate) params.endDate = endDate;
+  const { data } = await api.get('/debt-dashboard/statistics', { params });
+  return data;
+}
+
+export async function fetchAgingReport(): Promise<AgingReport> {
+  const { data } = await api.get('/debt-dashboard/aging-report');
+  return data;
+}
+
+export async function fetchPaymentPlans(
+  status?: string
+): Promise<PaymentPlan[]> {
+  const params: Record<string, string> = {};
+  if (status) params.status = status;
+  const { data } = await api.get('/debt-dashboard/payment-plans', { params });
+  return data.plans;
+}
+
+export async function fetchPaymentHistory(
+  filters: PaymentHistoryFilters = {}
+): Promise<{ records: PatientPaymentRecord[]; totalCount: number }> {
+  const params: Record<string, string | number> = {};
+  if (filters.patientId) params.patientId = filters.patientId;
+  if (filters.startDate) params.startDate = filters.startDate;
+  if (filters.endDate) params.endDate = filters.endDate;
+  if (filters.paymentStatus) params.paymentStatus = filters.paymentStatus;
+  if (filters.minAmount !== undefined) params.minAmount = filters.minAmount;
+  if (filters.maxAmount !== undefined) params.maxAmount = filters.maxAmount;
+  if (filters.search) params.search = filters.search;
+  if (filters.page) params.page = filters.page;
+  if (filters.pageSize) params.pageSize = filters.pageSize;
+  const { data } = await api.get('/debt-dashboard/payment-history', { params });
+  return data;
+}
+
+export async function fetchPaymentMethodAnalytics(): Promise<
+  PaymentMethodAnalytics[]
+> {
+  const { data } = await api.get('/debt-dashboard/payment-methods');
+  return data.methods;
+}
+
+export async function fetchPatientAppointments(
+  patientId: string
+): Promise<PatientAppointmentDetail[]> {
+  const { data } = await api.get('/debt-dashboard/patient-appointments', {
+    params: { patientId },
+  });
+  return data.appointments;
+}

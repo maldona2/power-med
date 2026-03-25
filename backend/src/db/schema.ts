@@ -492,6 +492,87 @@ export const calendarSyncQueue = pgTable(
 export type CalendarSyncQueue = typeof calendarSyncQueue.$inferSelect;
 export type NewCalendarSyncQueue = typeof calendarSyncQueue.$inferInsert;
 
+// ─── payment_records ─────────────────────────────────────────────────────────
+
+export const paymentRecords = pgTable(
+  'payment_records',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    patientId: uuid('patient_id')
+      .notNull()
+      .references(() => patients.id, { onDelete: 'cascade' }),
+    appointmentId: uuid('appointment_id').references(() => appointments.id, {
+      onDelete: 'set null',
+    }),
+    amountCents: integer('amount_cents').notNull(),
+    paymentMethod: text('payment_method', {
+      enum: ['cash', 'card', 'transfer', 'insurance', 'other'],
+    })
+      .notNull()
+      .default('cash'),
+    paymentDate: timestamp('payment_date', { withTimezone: true }).notNull(),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index('idx_payment_records_tenant').on(table.tenantId),
+    index('idx_payment_records_patient').on(table.patientId),
+    index('idx_payment_records_payment_date').on(table.paymentDate),
+  ]
+);
+
+export type PaymentRecord = typeof paymentRecords.$inferSelect;
+export type NewPaymentRecord = typeof paymentRecords.$inferInsert;
+
+// ─── payment_plans ────────────────────────────────────────────────────────────
+
+export const paymentPlans = pgTable(
+  'payment_plans',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    patientId: uuid('patient_id')
+      .notNull()
+      .references(() => patients.id, { onDelete: 'cascade' }),
+    totalAmountCents: integer('total_amount_cents').notNull(),
+    installmentAmountCents: integer('installment_amount_cents').notNull(),
+    frequency: text('frequency', {
+      enum: ['weekly', 'biweekly', 'monthly'],
+    })
+      .notNull()
+      .default('monthly'),
+    startDate: timestamp('start_date', { withTimezone: true }).notNull(),
+    nextPaymentDate: timestamp('next_payment_date', { withTimezone: true }),
+    status: text('status', {
+      enum: ['active', 'completed', 'delinquent', 'cancelled'],
+    })
+      .notNull()
+      .default('active'),
+    onTimePayments: integer('on_time_payments').notNull().default(0),
+    latePayments: integer('late_payments').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index('idx_payment_plans_tenant').on(table.tenantId),
+    index('idx_payment_plans_patient').on(table.patientId),
+    index('idx_payment_plans_status').on(table.status),
+  ]
+);
+
+export type PaymentPlan = typeof paymentPlans.$inferSelect;
+export type NewPaymentPlan = typeof paymentPlans.$inferInsert;
+
 // ─── relations ───────────────────────────────────────────────────────────────
 
 export const tenantsRelations = relations(tenants, ({ many }) => ({
@@ -507,6 +588,8 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   calendarSyncStatus: many(calendarSyncStatus),
   calendarSyncQueue: many(calendarSyncQueue),
   sessionPhotos: many(sessionPhotos),
+  paymentRecords: many(paymentRecords),
+  paymentPlans: many(paymentPlans),
 }));
 
 export const usersRelations = relations(users, ({ one }) => ({
@@ -977,3 +1060,29 @@ export const dailyAppointmentUsageRelations = relations(
     }),
   })
 );
+
+export const paymentRecordsRelations = relations(paymentRecords, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [paymentRecords.tenantId],
+    references: [tenants.id],
+  }),
+  patient: one(patients, {
+    fields: [paymentRecords.patientId],
+    references: [patients.id],
+  }),
+  appointment: one(appointments, {
+    fields: [paymentRecords.appointmentId],
+    references: [appointments.id],
+  }),
+}));
+
+export const paymentPlansRelations = relations(paymentPlans, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [paymentPlans.tenantId],
+    references: [tenants.id],
+  }),
+  patient: one(patients, {
+    fields: [paymentPlans.patientId],
+    references: [patients.id],
+  }),
+}));
