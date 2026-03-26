@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { X, CalendarDays } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -12,7 +13,8 @@ import { SessionDocumentationForm } from './SessionDocumentationForm';
 import { PhotoUploadComponent } from './PhotoUploadComponent';
 import { TreatmentInfoSection } from './TreatmentInfoSection';
 import { MedicalHistorySection } from './MedicalHistorySection';
-import type { Appointment } from '@/types';
+import api from '@/lib/api';
+import type { Appointment, PaymentStatus } from '@/types';
 
 interface AppointmentDetailPanelProps {
   appointmentId: string | null;
@@ -38,10 +40,35 @@ export function AppointmentDetailPanel({
   const [activeStatus, setActiveStatus] = useState<
     Appointment['status'] | null
   >(null);
+  const [activePayment, setActivePayment] = useState<PaymentStatus>('unpaid');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    if (detail) {
+      setActivePayment((detail.payment_status as PaymentStatus) ?? 'unpaid');
+    }
+  }, [detail]);
 
   // Use the detail's session id if it exists, fallback to locally-created one
   const sessionId = activeSessionId ?? detail?.session_id ?? null;
   const currentStatus = activeStatus ?? detail?.status ?? 'pending';
+
+  const handlePaymentChange = async (newStatus: PaymentStatus) => {
+    if (!detail) return;
+    setIsUpdating(true);
+    try {
+      await api.put(`/appointments/${detail.id}`, {
+        payment_status: newStatus,
+      });
+      setActivePayment(newStatus);
+      refetch();
+      toast.success('Estado de pago actualizado');
+    } catch {
+      toast.error('No se pudo actualizar el pago');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   if (!appointmentId) {
     return (
@@ -143,7 +170,9 @@ export function AppointmentDetailPanel({
               <TreatmentInfoSection
                 treatments={detail.treatments}
                 totalAmountCents={detail.total_amount_cents}
-                paymentStatus={detail.payment_status}
+                paymentStatus={activePayment}
+                onPaymentChange={handlePaymentChange}
+                isUpdating={isUpdating}
               />
             </>
           )}

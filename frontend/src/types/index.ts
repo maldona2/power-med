@@ -87,6 +87,8 @@ export interface SessionPhoto {
 }
 
 // Appointment types
+export type PaymentStatus = 'unpaid' | 'paid' | 'partial' | 'refunded';
+
 export interface Appointment {
   id: string;
   tenant_id: string;
@@ -94,7 +96,7 @@ export interface Appointment {
   scheduled_at: string;
   duration_minutes: number | null;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  payment_status: 'unpaid' | 'paid' | 'partial' | 'refunded';
+  payment_status: PaymentStatus;
   total_amount_cents: number | null;
   notes: string | null;
   created_at: string | null;

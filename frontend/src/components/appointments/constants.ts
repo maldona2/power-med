@@ -1,4 +1,33 @@
 import type { AppointmentFormData } from '@/hooks/useAppointments';
+import type { PaymentStatus } from '@/types';
+
+export type { PaymentStatus };
+
+export const paymentConfig: Record<
+  PaymentStatus,
+  { label: string; className: string }
+> = {
+  unpaid: {
+    label: 'Impago',
+    className:
+      'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/80 dark:border-amber-800 dark:text-amber-200',
+  },
+  paid: {
+    label: 'Pagado',
+    className:
+      'bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-200',
+  },
+  partial: {
+    label: 'Parcial',
+    className:
+      'bg-sky-50 border-sky-200 text-sky-900 dark:bg-sky-950/80 dark:border-sky-800 dark:text-sky-200',
+  },
+  refunded: {
+    label: 'Reembolsado',
+    className:
+      'bg-neutral-50 border-neutral-200 text-neutral-600 dark:bg-neutral-900/80 dark:border-neutral-700 dark:text-neutral-400',
+  },
+};
 
 export const statusConfig: Record<
   string,

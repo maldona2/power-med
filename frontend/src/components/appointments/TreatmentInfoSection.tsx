@@ -1,45 +1,30 @@
 import { Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { AppointmentTreatmentRow } from '@/types';
-
-const paymentLabels: Record<string, { label: string; className: string }> = {
-  unpaid: {
-    label: 'Impago',
-    className:
-      'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/80 dark:border-amber-800 dark:text-amber-200',
-  },
-  paid: {
-    label: 'Pagado',
-    className:
-      'bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-200',
-  },
-  partial: {
-    label: 'Parcial',
-    className:
-      'bg-sky-50 border-sky-200 text-sky-900 dark:bg-sky-950/80 dark:border-sky-800 dark:text-sky-200',
-  },
-  refunded: {
-    label: 'Reembolsado',
-    className:
-      'bg-neutral-50 border-neutral-200 text-neutral-600 dark:bg-neutral-900/80 dark:border-neutral-700 dark:text-neutral-400',
-  },
-};
+import type { PaymentStatus } from '@/types';
+import { paymentConfig } from './constants';
 
 interface TreatmentInfoSectionProps {
   treatments: AppointmentTreatmentRow[];
   totalAmountCents: number | null;
   paymentStatus: string;
+  onPaymentChange?: (newStatus: PaymentStatus) => Promise<void>;
+  isUpdating?: boolean;
 }
 
 export function TreatmentInfoSection({
   treatments,
   totalAmountCents,
   paymentStatus,
+  onPaymentChange,
+  isUpdating = false,
 }: TreatmentInfoSectionProps) {
   if (treatments.length === 0) return null;
 
-  const paymentConfig = paymentLabels[paymentStatus] ?? paymentLabels.unpaid;
+  const cfg =
+    paymentConfig[paymentStatus as PaymentStatus] ?? paymentConfig.unpaid;
   const total = (totalAmountCents ?? 0) / 100;
 
   return (
@@ -74,12 +59,34 @@ export function TreatmentInfoSection({
 
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">Estado de pago</span>
-        <Badge
-          variant="outline"
-          className={cn('gap-1.5', paymentConfig.className)}
-        >
-          {paymentConfig.label}
-        </Badge>
+        {onPaymentChange ? (
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              Object.entries(paymentConfig) as [
+                PaymentStatus,
+                { label: string; className: string },
+              ][]
+            ).map(([key, config]) => (
+              <Button
+                key={key}
+                variant={paymentStatus === key ? 'default' : 'outline'}
+                size="sm"
+                disabled={isUpdating || paymentStatus === key}
+                onClick={() => onPaymentChange(key)}
+                className={cn(
+                  'h-8 text-xs',
+                  paymentStatus === key && config.className
+                )}
+              >
+                {config.label}
+              </Button>
+            ))}
+          </div>
+        ) : (
+          <Badge variant="outline" className={cn('gap-1.5', cfg.className)}>
+            {cfg.label}
+          </Badge>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { usePatient } from '@/hooks/usePatients';
 import { useTreatments, usePatientTreatments } from '@/hooks/useTreatments';
 import api from '@/lib/api';
@@ -19,9 +20,15 @@ import { PatientFormDialog } from '@/components/patients/PatientFormDialog';
 import { MedicalHistoryDialog } from '@/components/patients/MedicalHistoryDialog';
 import { PatientTreatmentsCard } from '@/components/treatments';
 import { emptyForm, NewAppointmentSheet } from '@/components/appointments';
+import { paymentConfig } from '@/components/appointments/constants';
 import type { PatientFormData } from '@/hooks/usePatients';
 import type { AppointmentFormData } from '@/hooks/useAppointments';
-import type { MedicalCondition, Medication, Allergy } from '@/types';
+import type {
+  MedicalCondition,
+  Medication,
+  Allergy,
+  PaymentStatus,
+} from '@/types';
 import {
   Pencil,
   Plus,
@@ -38,6 +45,7 @@ import {
   Pill,
   AlertTriangle,
   Trash2,
+  Banknote,
 } from 'lucide-react';
 
 const statusConfig: Record<
@@ -615,7 +623,43 @@ export function PatientDetailPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="historial" className="mt-6">
+        <TabsContent value="historial" className="mt-6 space-y-4">
+          {(() => {
+            const unpaidAppointments = appointments.filter(
+              (a) => a.payment_status === 'unpaid'
+            );
+            const unpaidCount = unpaidAppointments.length;
+            const unpaidTotalCents = unpaidAppointments.reduce(
+              (sum, a) => sum + (a.total_amount_cents ?? 0),
+              0
+            );
+            return unpaidCount > 0 ? (
+              <Card className="overflow-hidden border-0 shadow-sm">
+                <CardHeader className="border-b px-6 pb-4">
+                  <CardTitle className="flex items-center gap-2 text-base font-medium">
+                    <Banknote className="h-4 w-4 text-muted-foreground" />
+                    Resumen de pagos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-between p-6">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Citas impagas
+                    </span>
+                    <Badge variant="secondary">{unpaidCount}</Badge>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">
+                      Total adeudado
+                    </p>
+                    <p className="text-lg font-bold tabular-nums">
+                      ${(unpaidTotalCents / 100).toFixed(2)}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null;
+          })()}
           {appointments.length === 0 ? (
             <Card className="border-dashed shadow-none">
               <CardContent className="flex flex-col items-center justify-center py-16">
@@ -644,6 +688,9 @@ export function PatientDetailPage() {
                   label: a.status,
                   variant: 'secondary' as const,
                 };
+                const pmtCfg =
+                  paymentConfig[a.payment_status as PaymentStatus] ??
+                  paymentConfig.unpaid;
                 return (
                   <Link
                     key={a.id}
@@ -656,7 +703,7 @@ export function PatientDetailPage() {
                           <Clock className="h-5 w-5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-3">
+                          <div className="flex flex-wrap items-center gap-2">
                             <p className="font-medium text-foreground">
                               {formatDate(a.scheduled_at)}
                             </p>
@@ -666,16 +713,27 @@ export function PatientDetailPage() {
                             >
                               {config.label}
                             </Badge>
+                            <Badge
+                              variant="outline"
+                              className={cn('shrink-0', pmtCfg.className)}
+                            >
+                              {pmtCfg.label}
+                            </Badge>
                           </div>
-                          {(a.procedures_performed || a.recommendations) && (
-                            <div className="mt-1.5 space-y-0.5 text-sm text-muted-foreground">
-                              {a.procedures_performed && (
-                                <p className="line-clamp-1">
-                                  {a.procedures_performed}
-                                </p>
-                              )}
-                            </div>
-                          )}
+                          <div className="mt-1 flex items-center justify-between">
+                            {(a.procedures_performed || a.recommendations) && (
+                              <div className="space-y-0.5 text-sm text-muted-foreground">
+                                {a.procedures_performed && (
+                                  <p className="line-clamp-1">
+                                    {a.procedures_performed}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            <span className="ml-auto text-sm font-medium tabular-nums text-muted-foreground">
+                              ${((a.total_amount_cents ?? 0) / 100).toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                         <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                       </CardContent>
