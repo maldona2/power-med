@@ -1,20 +1,32 @@
-import { Link } from 'react-router-dom';
 import { Phone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import type { PatientDetail } from '@/types';
 
 interface PatientCardProps {
   patient: PatientDetail;
+  onClick?: () => void;
+  isSelected?: boolean;
 }
 
-export function PatientCard({ patient }: PatientCardProps) {
+export function PatientCard({
+  patient,
+  onClick,
+  isSelected,
+}: PatientCardProps) {
   const unpaid = patient.unpaid_count ?? 0;
   const totalCents = patient.unpaid_total_cents ?? 0;
 
   return (
-    <Link
-      to={`/app/patients/${patient.id}`}
-      className="flex min-h-[44px] items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3 transition-colors active:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        isSelected
+          ? 'border-primary/50 bg-primary/5'
+          : 'active:bg-accent/50 hover:bg-muted/50'
+      )}
     >
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-foreground">
@@ -39,6 +51,6 @@ export function PatientCard({ patient }: PatientCardProps) {
           </Badge>
         )}
       </div>
-    </Link>
+    </button>
   );
 }

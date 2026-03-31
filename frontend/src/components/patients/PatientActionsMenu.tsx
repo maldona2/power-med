@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Eye, Pencil, Trash, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -17,20 +16,21 @@ import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 interface PatientActionsMenuProps {
   patient: Patient;
   onEdit: (patient: Patient) => void;
+  onView?: (patient: Patient) => void;
   refetch: () => void;
 }
 
 export function PatientActionsMenu({
   patient,
   onEdit,
+  onView,
   refetch,
 }: PatientActionsMenuProps) {
-  const navigate = useNavigate();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleView = () => {
-    navigate(`/app/patients/${patient.id}`);
+    onView?.(patient);
   };
 
   const handleEdit = () => {

@@ -1,42 +1,44 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import {
-  createColumnHelper,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
 import { usePatients } from '@/hooks/usePatients';
-import { PatientFormDialog } from '@/components/patients/PatientFormDialog';
-import { PatientActionsMenu } from '@/components/patients/PatientActionsMenu';
-import { PatientCard } from '@/components/patients/PatientCard';
+import {
+  PatientFormDialog,
+  PatientActionsMenu,
+  PatientCard,
+  PatientDetailPanel,
+} from '@/components/patients';
 import { Button } from '@/components/ui/button';
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTableSkeleton } from '@/components/data-table/data-table-skeleton';
-import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
-import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import api from '@/lib/api';
 import type { Patient, PatientDetail } from '@/types';
 import type { PatientFormData } from '@/hooks/usePatients';
 import { toast } from 'sonner';
-import { Plus } from 'lucide-react';
-
-const columnHelper = createColumnHelper<Patient>();
-
-const filterFields: { label: string; value: string; placeholder: string }[] = [
-  {
-    label: 'Nombre',
-    value: 'name',
-    placeholder: 'Buscar por nombre...',
-  },
-];
+import { Plus, Search, Users } from 'lucide-react';
 
 export function PatientsPage() {
   const { patients, loading, refetch } = usePatients();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
+    null
+  );
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return patients;
+    return patients.filter(
+      (p) =>
+        p.first_name.toLowerCase().includes(q) ||
+        p.last_name.toLowerCase().includes(q) ||
+        p.phone?.toLowerCase().includes(q) ||
+        p.email?.toLowerCase().includes(q)
+    );
+  }, [patients, search]);
 
   const openCreate = useCallback(() => {
     setEditingPatient(null);
@@ -48,102 +50,12 @@ export function PatientsPage() {
     setDialogOpen(true);
   }, []);
 
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor((row) => `${row.last_name}, ${row.first_name}`, {
-        id: 'name',
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Nombre" />
-        ),
-        cell: ({ row }) => (
-          <Link
-            to={`/app/patients/${row.original.id}`}
-            className="font-medium text-foreground transition-colors hover:text-primary hover:underline underline-offset-4"
-          >
-            {row.original.last_name}, {row.original.first_name}
-          </Link>
-        ),
-        filterFn: 'includesString',
-      }),
-      columnHelper.accessor('phone', {
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Teléfono" />
-        ),
-        cell: ({ getValue }) => (
-          <span className="text-muted-foreground">{getValue() ?? '—'}</span>
-        ),
-      }),
-      columnHelper.accessor('email', {
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Email" />
-        ),
-        cell: ({ getValue }) => (
-          <span className="text-muted-foreground">{getValue() ?? '—'}</span>
-        ),
-      }),
-      columnHelper.accessor((row) => row.appointment_count ?? 0, {
-        id: 'appointment_count',
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Citas" />
-        ),
-        cell: ({ row }) => {
-          const n = row.original.appointment_count ?? 0;
-          return (
-            <span className="tabular-nums text-muted-foreground">
-              {n} {n === 1 ? 'cita' : 'citas'}
-            </span>
-          );
-        },
-      }),
-      columnHelper.accessor((row) => row.unpaid_count ?? 0, {
-        id: 'payment',
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Pago" />
-        ),
-        cell: ({ row }) => {
-          const unpaid = row.original.unpaid_count ?? 0;
-          const totalCents = row.original.unpaid_total_cents ?? 0;
-          if (unpaid === 0) {
-            return (
-              <span className="text-emerald-600 dark:text-emerald-400">
-                Al día
-              </span>
-            );
-          }
-          const amount = (totalCents / 100).toFixed(2);
-          return (
-            <span className="text-amber-600 dark:text-amber-400">
-              {unpaid} impago{unpaid !== 1 ? 's' : ''}
-              {totalCents > 0 && ` · $${amount}`}
-            </span>
-          );
-        },
-      }),
-      columnHelper.display({
-        id: 'actions',
-        header: () => <span className="sr-only">Acciones</span>,
-        cell: ({ row }) => (
-          <div className="flex justify-end">
-            <PatientActionsMenu
-              patient={row.original}
-              onEdit={openEdit}
-              refetch={refetch}
-            />
-          </div>
-        ),
-      }),
-    ],
-    [openEdit, refetch]
-  );
-
-  const table = useReactTable({
-    data: patients,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-  });
+  const handleSelectPatient = useCallback((patientId: string) => {
+    setSelectedPatientId(patientId);
+    if (window.innerWidth < 768) {
+      setMobileDetailOpen(true);
+    }
+  }, []);
 
   async function handleSubmit(data: PatientFormData) {
     const payload = {
@@ -164,72 +76,114 @@ export function PatientsPage() {
     refetch();
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight">Pacientes</h1>
-            <p className="text-sm text-muted-foreground">
-              Gestiona la información de tus pacientes
-            </p>
+  return (
+    <div className="-m-4 flex h-[calc(100dvh-4rem)] min-h-0 overflow-hidden bg-background sm:-m-5 md:-m-6">
+      {/* Left panel */}
+      <div
+        className={`flex h-full flex-col ${mobileDetailOpen ? 'hidden md:flex' : 'flex'} w-full min-w-0 border-r md:w-[45%] lg:w-[40%] xl:w-[35%] md:min-w-[300px] lg:min-w-[340px] xl:min-w-[380px] md:max-w-[480px] lg:max-w-[500px] xl:max-w-[540px]`}
+      >
+        {/* Header */}
+        <div className="shrink-0 border-b px-4 py-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold tracking-tight">
+                Pacientes
+              </h2>
+              {!loading && (
+                <Badge variant="secondary" className="tabular-nums">
+                  {patients.length}
+                </Badge>
+              )}
+            </div>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Nuevo
+            </Button>
           </div>
-          <Button disabled className="w-full sm:w-auto">
-            <Plus className="size-4" />
-            Nuevo paciente
-          </Button>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar paciente..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 pl-8 text-sm"
+            />
+          </div>
         </div>
-        <DataTableSkeleton
-          columnCount={6}
-          searchableColumnCount={1}
-          filterableColumnCount={0}
+
+        {/* List */}
+        <ScrollArea className="flex-1">
+          <div className="p-3">
+            {loading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-14 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
+                <Users className="mb-3 h-10 w-10 opacity-30" />
+                <p className="font-medium">
+                  {search ? 'Sin resultados' : 'Sin pacientes'}
+                </p>
+                <p className="mt-1 text-sm">
+                  {search
+                    ? 'No hay pacientes que coincidan con la búsqueda.'
+                    : 'Crea el primer paciente con el botón Nuevo.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {filtered.map((p) => (
+                  <div
+                    key={p.id}
+                    className="group relative flex items-center gap-1"
+                  >
+                    <PatientCard
+                      patient={p as PatientDetail}
+                      isSelected={selectedPatientId === p.id}
+                      onClick={() => handleSelectPatient(p.id)}
+                    />
+                    <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <PatientActionsMenu
+                        patient={p}
+                        onEdit={openEdit}
+                        onView={(pt) => handleSelectPatient(pt.id)}
+                        refetch={refetch}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Right panel: desktop */}
+      <div className="hidden h-full min-w-0 flex-1 overflow-hidden md:flex md:flex-col">
+        <PatientDetailPanel
+          patientId={selectedPatientId}
+          key={selectedPatientId}
         />
       </div>
-    );
-  }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Pacientes</h1>
-          <p className="text-sm text-muted-foreground">
-            Gestiona la información de tus pacientes
-          </p>
-        </div>
-        <Button onClick={openCreate} className="w-full sm:w-auto">
-          <Plus className="size-4" />
-          Nuevo paciente
-        </Button>
-      </div>
+      {/* Right panel: mobile Sheet */}
+      <Sheet open={mobileDetailOpen} onOpenChange={setMobileDetailOpen}>
+        <SheetContent
+          side="right"
+          className="flex w-full flex-col overflow-hidden p-0 sm:max-w-md md:max-w-lg"
+        >
+          <PatientDetailPanel
+            patientId={selectedPatientId}
+            onClose={() => setMobileDetailOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
 
-      {/* Mobile card list — visible below md breakpoint */}
-      <div className="flex flex-col gap-2 md:hidden">
-        {patients.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">
-            No hay pacientes registrados.
-          </p>
-        ) : (
-          patients.map((p) => (
-            <PatientCard key={p.id} patient={p as PatientDetail} />
-          ))
-        )}
-      </div>
-
-      {/* Desktop table — hidden below md breakpoint */}
-      <div className="hidden md:block">
-        <DataTable table={table}>
-          <DataTableToolbar table={table} filterFields={filterFields}>
-            {patients.length > 0 && (
-              <span className="text-sm text-muted-foreground">
-                {patients.length}{' '}
-                {patients.length === 1 ? 'paciente' : 'pacientes'}
-              </span>
-            )}
-          </DataTableToolbar>
-        </DataTable>
-      </div>
-
+      {/* New/Edit patient dialog */}
       <PatientFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
