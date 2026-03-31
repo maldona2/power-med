@@ -11,6 +11,7 @@ import {
   parseISO,
 } from 'date-fns';
 import { LayoutList, CalendarDays } from 'lucide-react';
+import { ContextualHelpButton } from '@/components/help/ContextualHelpButton';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { useAppointments } from '@/hooks/useAppointments';
@@ -214,6 +215,7 @@ export function AppointmentsPage() {
           </h1>
           <div className="flex items-center gap-1.5 sm:gap-2">
             {viewToggle}
+            <ContextualHelpButton section="appointments" />
             <Button
               size="sm"
               className="h-8 px-2.5 text-xs sm:h-9 sm:px-3 sm:text-sm"

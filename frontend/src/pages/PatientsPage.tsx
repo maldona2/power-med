@@ -17,6 +17,7 @@ import type { Patient, PatientDetail } from '@/types';
 import type { PatientFormData } from '@/hooks/usePatients';
 import { toast } from 'sonner';
 import { Plus, Search, Users } from 'lucide-react';
+import { ContextualHelpButton } from '@/components/help/ContextualHelpButton';
 
 export function PatientsPage() {
   const { patients, loading, refetch } = usePatients();
@@ -95,6 +96,7 @@ export function PatientsPage() {
                 </Badge>
               )}
             </div>
+            <ContextualHelpButton section="patients" />
             <Button size="sm" onClick={openCreate}>
               <Plus className="mr-1.5 h-4 w-4" />
               Nuevo

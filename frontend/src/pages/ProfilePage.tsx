@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ContextualHelpButton } from '@/components/help/ContextualHelpButton';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   User,
@@ -263,6 +264,7 @@ export function ProfilePage() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <ContextualHelpButton section="profile" />
             {isEditing ? (
               <>
                 <Button

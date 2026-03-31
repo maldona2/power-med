@@ -24,6 +24,7 @@ import { PatientsPage } from '@/pages/PatientsPage';
 import { PatientDetailPage } from '@/pages/PatientDetailPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { DebtDashboardPage } from '@/pages/DebtDashboardPage';
+import { HelpPage } from '@/pages/HelpPage';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 
@@ -94,6 +95,8 @@ function App() {
               <Route path="patients/:id" element={<PatientDetailPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="debt-dashboard" element={<DebtDashboardPage />} />
+              <Route path="help" element={<HelpPage />} />
+              <Route path="help/:section" element={<HelpPage />} />
               <Route
                 index
                 element={<Navigate to="/app/appointments" replace />}
