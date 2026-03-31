@@ -16,7 +16,13 @@ const appointmentLimitEnforcer = new LimitEnforcer(
   new UsageTracker()
 );
 
-const statusEnum = z.enum(['pending', 'confirmed', 'completed', 'cancelled']);
+const statusEnum = z.enum([
+  'pending',
+  'confirmed',
+  'completed',
+  'cancelled',
+  'no-show',
+]);
 const paymentStatusEnum = z.enum(['unpaid', 'paid', 'partial', 'refunded']);
 
 const treatmentLineItemSchema = z.object({
@@ -109,7 +115,10 @@ router.post(
       }
 
       const tenantId = getTenantId(req);
-      const appt = await appointmentService.create(tenantId, parsed.data);
+      const appt = await appointmentService.create(tenantId, {
+        ...parsed.data,
+        userRole: req.user?.role,
+      });
 
       void appointmentLimitEnforcer
         .incrementDailyAppointmentUsage(userId)

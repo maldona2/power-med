@@ -95,7 +95,7 @@ export interface Appointment {
   patient_id: string;
   scheduled_at: string;
   duration_minutes: number | null;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no-show';
   payment_status: PaymentStatus;
   total_amount_cents: number | null;
   notes: string | null;

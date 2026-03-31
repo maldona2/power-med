@@ -62,6 +62,7 @@ import subscriptionRoutes from './subscriptions/api/routes.js';
 import registrationRoutes from './registration/api/routes.js';
 import sessionPhotosRoutes from './routes/sessionPhotos.js';
 import debtDashboardRoutes from './routes/debtDashboard.js';
+import remindersRoutes from './routes/reminders.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -78,6 +79,7 @@ app.use('/api', googleCalendarRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/registration', registrationRoutes);
 app.use('/api/debt-dashboard', debtDashboardRoutes);
+app.use('/api/reminders', remindersRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);

@@ -4,6 +4,7 @@ export interface AppointmentEmailData {
   scheduledAt: Date;
   durationMinutes: number;
   notes?: string | null;
+  unsubscribeUrl?: string | null;
 }
 
 function formatDate(date: Date): string {
@@ -142,6 +143,15 @@ export function reminderTemplate(data: AppointmentEmailData): {
 } {
   const dateStr = formatDate(data.scheduledAt);
   const subject = `Recordatorio: turno mañana con ${data.professionalName}`;
+  const unsubscribeHtml = data.unsubscribeUrl
+    ? `<p style="font-size:12px;color:#999;margin-top:16px">
+         ¿No querés recibir más recordatorios?
+         <a href="${data.unsubscribeUrl}" style="color:#999">Cancelar suscripción</a>
+       </p>`
+    : '';
+  const unsubscribeText = data.unsubscribeUrl
+    ? `\n\nPara no recibir más recordatorios: ${data.unsubscribeUrl}`
+    : '';
 
   const html = baseHtml(
     subject,
@@ -158,10 +168,11 @@ export function reminderTemplate(data: AppointmentEmailData): {
          <p>${data.durationMinutes} minutos</p>
        </div>
        <p>Si no podés asistir, avisanos lo antes posible.</p>
+       ${unsubscribeHtml}
      </div>`
   );
 
-  const text = `Recordatorio: turno mañana con ${data.professionalName}.\n\nFecha: ${dateStr}\nDuración: ${data.durationMinutes} min`;
+  const text = `Recordatorio: turno mañana con ${data.professionalName}.\n\nFecha: ${dateStr}\nDuración: ${data.durationMinutes} min${unsubscribeText}`;
 
   return { subject, html, text };
 }

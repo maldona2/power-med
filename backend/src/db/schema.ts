@@ -136,7 +136,7 @@ export const appointments = pgTable(
     }).notNull(),
     durationMinutes: integer('duration_minutes').default(60),
     status: text('status', {
-      enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+      enum: ['pending', 'confirmed', 'completed', 'cancelled', 'no-show'],
     })
       .notNull()
       .default('pending'),
@@ -1075,6 +1075,99 @@ export const paymentRecordsRelations = relations(paymentRecords, ({ one }) => ({
     references: [appointments.id],
   }),
 }));
+
+// ─── reminder_deliveries ──────────────────────────────────────────────────────
+
+export const reminderDeliveries = pgTable(
+  'reminder_deliveries',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    appointmentId: uuid('appointment_id')
+      .notNull()
+      .references(() => appointments.id, { onDelete: 'cascade' }),
+    patientId: uuid('patient_id')
+      .notNull()
+      .references(() => patients.id, { onDelete: 'cascade' }),
+    patientEmail: text('patient_email').notNull(),
+    sentAt: timestamp('sent_at', { withTimezone: true }).defaultNow(),
+    status: text('status', { enum: ['sent', 'failed', 'skipped'] })
+      .notNull()
+      .default('sent'),
+    errorMessage: text('error_message'),
+    retryCount: integer('retry_count').notNull().default(0),
+  },
+  (table) => [
+    index('idx_reminder_deliveries_appointment').on(table.appointmentId),
+    index('idx_reminder_deliveries_tenant').on(table.tenantId),
+    index('idx_reminder_deliveries_sent_at').on(table.sentAt),
+    index('idx_reminder_deliveries_status').on(table.status),
+  ]
+);
+
+export type ReminderDelivery = typeof reminderDeliveries.$inferSelect;
+export type NewReminderDelivery = typeof reminderDeliveries.$inferInsert;
+
+// ─── reminder_opt_outs ────────────────────────────────────────────────────────
+
+export const reminderOptOuts = pgTable(
+  'reminder_opt_outs',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    patientId: uuid('patient_id')
+      .notNull()
+      .references(() => patients.id, { onDelete: 'cascade' }),
+    optedOutAt: timestamp('opted_out_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index('idx_reminder_opt_outs_patient').on(table.patientId),
+    index('idx_reminder_opt_outs_tenant').on(table.tenantId),
+  ]
+);
+
+export type ReminderOptOut = typeof reminderOptOuts.$inferSelect;
+export type NewReminderOptOut = typeof reminderOptOuts.$inferInsert;
+
+export const reminderDeliveriesRelations = relations(
+  reminderDeliveries,
+  ({ one }) => ({
+    tenant: one(tenants, {
+      fields: [reminderDeliveries.tenantId],
+      references: [tenants.id],
+    }),
+    appointment: one(appointments, {
+      fields: [reminderDeliveries.appointmentId],
+      references: [appointments.id],
+    }),
+    patient: one(patients, {
+      fields: [reminderDeliveries.patientId],
+      references: [patients.id],
+    }),
+  })
+);
+
+export const reminderOptOutsRelations = relations(
+  reminderOptOuts,
+  ({ one }) => ({
+    tenant: one(tenants, {
+      fields: [reminderOptOuts.tenantId],
+      references: [tenants.id],
+    }),
+    patient: one(patients, {
+      fields: [reminderOptOuts.patientId],
+      references: [patients.id],
+    }),
+  })
+);
 
 export const paymentPlansRelations = relations(paymentPlans, ({ one }) => ({
   tenant: one(tenants, {

@@ -50,8 +50,10 @@ async function startServer() {
  * Set up all scheduled jobs
  */
 function setupScheduledJobs() {
-  // Daily at 09:00 — send 24h appointment reminders
-  cron.schedule('0 9 * * *', () => {
+  // Send 24h appointment reminders (configurable via env, default: daily at 09:00)
+  const reminderCronSchedule =
+    process.env.REMINDER_CRON_SCHEDULE ?? '0 9 * * *';
+  cron.schedule(reminderCronSchedule, () => {
     logger.info('Cron: running appointment reminder job');
     void sendReminders();
   });

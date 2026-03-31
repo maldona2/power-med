@@ -60,7 +60,8 @@ export type AppointmentStatus =
   | 'pending'
   | 'confirmed'
   | 'completed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'no-show';
 
 export type PaymentStatus = 'unpaid' | 'paid' | 'partial' | 'refunded';
 
@@ -108,6 +109,7 @@ export interface CreateAppointmentInput {
   notes?: string | null;
   payment_status?: PaymentStatus;
   treatments?: TreatmentLineItem[];
+  userRole?: string;
 }
 
 export interface ListFilters {
@@ -471,6 +473,9 @@ export async function create(
       ? computeTotalCents(input.treatments)
       : null;
 
+  const initialStatus: AppointmentStatus =
+    input.userRole === 'professional' ? 'confirmed' : 'pending';
+
   const [row] = await db
     .insert(appointments)
     .values({
@@ -478,7 +483,7 @@ export async function create(
       patientId: input.patient_id,
       scheduledAt: new Date(input.scheduled_at),
       durationMinutes: input.duration_minutes ?? 60,
-      status: 'pending',
+      status: initialStatus,
       paymentStatus: input.payment_status ?? 'unpaid',
       totalAmountCents: totalCents,
       notes: input.notes ?? null,
@@ -522,6 +527,11 @@ export async function create(
     }
   });
 
+  // fire-and-forget calendar sync for auto-confirmed appointments
+  if (initialStatus === 'confirmed') {
+    void enqueueSyncIfConnected(tenantId, 'create', row.id);
+  }
+
   return result;
 }
 
@@ -531,12 +541,40 @@ export type UpdateAppointmentInput = Partial<CreateAppointmentInput> & {
   treatments?: TreatmentLineItem[];
 };
 
+const VALID_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
+  pending: ['confirmed', 'cancelled', 'no-show'],
+  confirmed: ['completed', 'cancelled', 'no-show'],
+  completed: ['cancelled'],
+  cancelled: [],
+  'no-show': [],
+};
+
 export async function update(
   tenantId: string,
   id: string,
   data: UpdateAppointmentInput
 ): Promise<AppointmentRow | null> {
   const setValue: Partial<typeof appointments.$inferInsert> = {};
+
+  if (data.status !== undefined) {
+    const [current] = await db
+      .select({ status: appointments.status })
+      .from(appointments)
+      .where(and(eq(appointments.id, id), eq(appointments.tenantId, tenantId)))
+      .limit(1);
+
+    if (!current) return null;
+
+    const currentStatus = current.status as AppointmentStatus;
+    const allowed = VALID_TRANSITIONS[currentStatus] ?? [];
+    if (!allowed.includes(data.status)) {
+      const err = new Error(
+        `Cannot transition from '${currentStatus}' to '${data.status}'`
+      );
+      (err as Error & { statusCode?: number }).statusCode = 400;
+      throw err;
+    }
+  }
 
   if (data.patient_id !== undefined) setValue.patientId = data.patient_id;
   if (data.scheduled_at !== undefined)
