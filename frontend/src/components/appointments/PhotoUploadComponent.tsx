@@ -4,17 +4,36 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useSessionPhotos } from '@/hooks/useSessionPhotos';
+import api from '@/lib/api';
 import type { SessionPhoto } from '@/types';
 
 interface PhotoUploadComponentProps {
   sessionId: string | null;
+  appointmentId?: string;
+  patientId?: string;
+  onSessionCreated?: (sessionId: string) => void;
 }
 
-export function PhotoUploadComponent({ sessionId }: PhotoUploadComponentProps) {
-  const { photos, loading, uploadPhoto } = useSessionPhotos(sessionId);
+export function PhotoUploadComponent({
+  sessionId,
+  appointmentId,
+  patientId,
+  onSessionCreated,
+}: PhotoUploadComponentProps) {
+  const [localSessionId, setLocalSessionId] = useState<string | null>(null);
+  const effectiveSessionId = localSessionId ?? sessionId;
+
+  const { photos, loading, refetch } = useSessionPhotos(effectiveSessionId);
+  // Always points to the latest refetch (correct sessionId after re-render)
+  const refetchRef = useRef(refetch);
+  refetchRef.current = refetch;
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [viewPhoto, setViewPhoto] = useState<SessionPhoto | null>(null);
+
+  const canUpload =
+    effectiveSessionId !== null || (!!appointmentId && !!patientId);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -36,8 +55,47 @@ export function PhotoUploadComponent({ sessionId }: PhotoUploadComponentProps) {
 
     setUploading(true);
     try {
-      await uploadPhoto(file);
+      let sid = effectiveSessionId;
+
+      // Auto-create a session if we have appointment context but no session yet
+      if (!sid && appointmentId && patientId) {
+        const { data } = await api.post<{ id: string }>('/sessions', {
+          appointment_id: appointmentId,
+          patient_id: patientId,
+          procedures_performed: '',
+        });
+        sid = data.id;
+        setLocalSessionId(sid);
+        onSessionCreated?.(sid);
+      }
+
+      if (!sid) {
+        toast.error('No se pudo determinar la sesión');
+        return;
+      }
+
+      // Upload directly with the resolved sid (not via hook closure)
+      const { data: uploadData } = await api.post<{
+        photo_id: string;
+        upload_url: string;
+      }>(`/sessions/${sid}/photos/upload-url`, {
+        file_name: file.name,
+        file_size_bytes: file.size,
+        mime_type: file.type,
+      });
+
+      await fetch(uploadData.upload_url, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+
+      await api.post(`/sessions/${sid}/photos/${uploadData.photo_id}/confirm`);
+
       toast.success('Foto subida correctamente');
+      // By this point React has re-rendered with localSessionId set,
+      // so refetchRef.current uses the correct sid
+      await refetchRef.current();
     } catch {
       toast.error('No se pudo subir la foto');
     } finally {
@@ -46,7 +104,7 @@ export function PhotoUploadComponent({ sessionId }: PhotoUploadComponentProps) {
     }
   }
 
-  if (!sessionId) {
+  if (!canUpload) {
     return (
       <div className="rounded-xl border bg-muted/30 p-4">
         <div className="flex items-center gap-2 mb-2">

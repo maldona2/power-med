@@ -139,6 +139,17 @@ export function AppointmentsPage() {
           '/appointments',
           payload
         );
+
+        // If session notes were filled in, create a session for the new appointment
+        if (form.session_procedures?.trim()) {
+          await api.post('/sessions', {
+            appointment_id: newApt.id,
+            patient_id: form.patient_id,
+            procedures_performed: form.session_procedures,
+            recommendations: form.session_recommendations?.trim() || null,
+          });
+        }
+
         toast.success('Turno creado');
         setSheetOpen(false);
         setForm(emptyForm);

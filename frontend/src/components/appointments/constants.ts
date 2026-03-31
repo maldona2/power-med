@@ -75,4 +75,6 @@ export const emptyForm: AppointmentFormData = {
   notes: '',
   payment_status: 'unpaid',
   treatments: [],
+  session_procedures: '',
+  session_recommendations: '',
 };

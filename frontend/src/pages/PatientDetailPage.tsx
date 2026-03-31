@@ -183,7 +183,7 @@ export function PatientDetailPage() {
       const scheduled = new Date(form.date);
       scheduled.setHours(hours ?? 0, minutes ?? 0, 0, 0);
 
-      await api.post('/appointments', {
+      const { data: newApt } = await api.post<{ id: string }>('/appointments', {
         patient_id: form.patient_id,
         scheduled_at: scheduled.toISOString(),
         duration_minutes: form.duration_minutes,
@@ -194,6 +194,16 @@ export function PatientDetailPage() {
             ? form.treatments
             : undefined,
       });
+
+      if (form.session_procedures?.trim()) {
+        await api.post('/sessions', {
+          appointment_id: newApt.id,
+          patient_id: form.patient_id,
+          procedures_performed: form.session_procedures,
+          recommendations: form.session_recommendations?.trim() || null,
+        });
+      }
+
       toast.success('Turno creado');
       setAppointmentSheetOpen(false);
       setForm(emptyForm);

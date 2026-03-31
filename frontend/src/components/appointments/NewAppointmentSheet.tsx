@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -8,11 +9,16 @@ import {
   User,
   Syringe,
   Trash2,
+  History,
+  ChevronDown,
+  ChevronUp,
+  ClipboardList,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Select,
@@ -28,7 +34,9 @@ import {
 } from '@/components/ui/popover';
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { QuickAddPatientDialog } from './QuickAddPatientDialog';
+import { MedicalHistorySection } from './MedicalHistorySection';
 import type { AppointmentFormData } from '@/hooks/useAppointments';
 import type { Patient, Treatment } from '@/types';
 
@@ -51,6 +59,9 @@ export function NewAppointmentSheet({
   onSubmit,
   onPatientCreated,
 }: NewAppointmentSheetProps) {
+  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [sessionNotesExpanded, setSessionNotesExpanded] = useState(false);
+
   const lineItems = form.treatments ?? [];
   const totalCents = lineItems.reduce(
     (sum, t) => sum + t.quantity * t.unit_price_cents,
@@ -339,6 +350,96 @@ export function NewAppointmentSheet({
                 placeholder="Motivo de la consulta, observaciones..."
               />
             </div>
+
+            {/* Session notes (optional) */}
+            <div className="rounded-lg border overflow-hidden">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between px-3 py-2.5 text-left hover:bg-muted/40 transition-colors"
+                onClick={() => setSessionNotesExpanded((v) => !v)}
+              >
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                  Documentar sesión{' '}
+                  <span className="font-normal text-muted-foreground">
+                    (opcional)
+                  </span>
+                </span>
+                {sessionNotesExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+              {sessionNotesExpanded && (
+                <div className="space-y-3 border-t p-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Procedimientos realizados
+                    </label>
+                    <Textarea
+                      className="min-h-[80px] resize-none rounded-lg bg-background text-sm"
+                      value={form.session_procedures ?? ''}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          session_procedures: e.target.value,
+                        }))
+                      }
+                      placeholder="Describe los procedimientos realizados..."
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Recomendaciones
+                    </label>
+                    <Textarea
+                      className="min-h-[60px] resize-none rounded-lg bg-background text-sm"
+                      value={form.session_recommendations ?? ''}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          session_recommendations: e.target.value,
+                        }))
+                      }
+                      placeholder="Recomendaciones para el paciente..."
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Patient medical history */}
+            {form.patient_id && (
+              <>
+                <Separator />
+                <div className="rounded-lg border overflow-hidden">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between px-3 py-2.5 text-left hover:bg-muted/40 transition-colors"
+                    onClick={() => setHistoryExpanded((v) => !v)}
+                  >
+                    <span className="flex items-center gap-2 text-sm font-medium">
+                      <History className="h-4 w-4 text-primary" />
+                      Historial del paciente
+                    </span>
+                    {historyExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </button>
+                  {historyExpanded && (
+                    <div className="border-t p-3">
+                      <MedicalHistorySection
+                        patientId={form.patient_id}
+                        excludeSessionId={null}
+                      />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </ScrollArea>
 

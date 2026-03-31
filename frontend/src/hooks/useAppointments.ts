@@ -15,6 +15,8 @@ export interface AppointmentFormData {
   notes: string;
   payment_status?: 'unpaid' | 'paid' | 'partial' | 'refunded';
   treatments?: TreatmentLineItem[];
+  session_procedures?: string;
+  session_recommendations?: string;
 }
 
 export interface AppointmentListFilters {

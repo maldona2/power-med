@@ -13,6 +13,8 @@ import { SessionDocumentationForm } from './SessionDocumentationForm';
 import { PhotoUploadComponent } from './PhotoUploadComponent';
 import { TreatmentInfoSection } from './TreatmentInfoSection';
 import { MedicalHistorySection } from './MedicalHistorySection';
+import { NextAppointmentSection } from './NextAppointmentSection';
+import { PaymentHistorySection } from './PaymentHistorySection';
 import api from '@/lib/api';
 import type { Appointment, PaymentStatus } from '@/types';
 
@@ -44,8 +46,13 @@ export function AppointmentDetailPanel({
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
+    setActiveSessionId(null);
+  }, [appointmentId]);
+
+  useEffect(() => {
     if (detail) {
       setActivePayment((detail.payment_status as PaymentStatus) ?? 'unpaid');
+      setActiveStatus(detail.status);
     }
   }, [detail]);
 
@@ -140,6 +147,11 @@ export function AppointmentDetailPanel({
 
           <Separator />
 
+          {/* Next appointment recommendation */}
+          <NextAppointmentSection patientId={detail.patient_id} />
+
+          <Separator />
+
           {/* Session documentation */}
           <SessionDocumentationForm
             appointmentId={detail.id}
@@ -161,7 +173,15 @@ export function AppointmentDetailPanel({
           <Separator />
 
           {/* Photo upload */}
-          <PhotoUploadComponent sessionId={sessionId} />
+          <PhotoUploadComponent
+            sessionId={sessionId}
+            appointmentId={detail.id}
+            patientId={detail.patient_id}
+            onSessionCreated={(id) => {
+              setActiveSessionId(id);
+              refetch();
+            }}
+          />
 
           {/* Treatments */}
           {detail.treatments && detail.treatments.length > 0 && (
@@ -176,6 +196,11 @@ export function AppointmentDetailPanel({
               />
             </>
           )}
+
+          <Separator />
+
+          {/* Payment history */}
+          <PaymentHistorySection patientId={detail.patient_id} />
 
           <Separator />
 

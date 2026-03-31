@@ -1,5 +1,12 @@
 import { and, asc, desc, eq, ilike, ne, or, sql } from 'drizzle-orm';
-import { db, patients, appointments, sessions } from '../db/client.js';
+import {
+  db,
+  patients,
+  appointments,
+  sessions,
+  appointmentTreatments,
+  treatments,
+} from '../db/client.js';
 import * as medicalHistoryService from './medicalHistoryService.js';
 
 export interface PatientRow {
@@ -272,6 +279,104 @@ export async function getPatientSessions(
     recommendations: r.recommendations ?? null,
     created_at: r.createdAt ?? null,
   }));
+}
+
+export interface PatientPaymentHistoryEntry {
+  appointment_id: string;
+  scheduled_at: string;
+  payment_status: string;
+  total_amount_cents: number | null;
+  treatments: Array<{
+    name: string;
+    quantity: number;
+    unit_price_cents: number;
+  }>;
+}
+
+export interface PatientPaymentHistorySummary {
+  unpaid_count: number;
+  unpaid_total_cents: number;
+}
+
+export async function getPatientPaymentHistory(
+  tenantId: string,
+  patientId: string
+): Promise<{
+  history: PatientPaymentHistoryEntry[];
+  summary: PatientPaymentHistorySummary;
+}> {
+  const [patient] = await db
+    .select({ id: patients.id })
+    .from(patients)
+    .where(and(eq(patients.id, patientId), eq(patients.tenantId, tenantId)))
+    .limit(1);
+
+  if (!patient)
+    return { history: [], summary: { unpaid_count: 0, unpaid_total_cents: 0 } };
+
+  const apptRows = await db
+    .select({
+      appointmentId: appointments.id,
+      scheduledAt: appointments.scheduledAt,
+      paymentStatus: appointments.paymentStatus,
+      totalAmountCents: appointments.totalAmountCents,
+      treatmentName: treatments.name,
+      quantity: appointmentTreatments.quantity,
+      unitPriceCents: appointmentTreatments.unitPriceCents,
+    })
+    .from(appointments)
+    .leftJoin(
+      appointmentTreatments,
+      eq(appointmentTreatments.appointmentId, appointments.id)
+    )
+    .leftJoin(treatments, eq(treatments.id, appointmentTreatments.treatmentId))
+    .where(
+      and(
+        eq(appointments.patientId, patientId),
+        eq(appointments.tenantId, tenantId)
+      )
+    )
+    .orderBy(desc(appointments.scheduledAt));
+
+  // Group by appointment
+  const appointmentMap = new Map<string, PatientPaymentHistoryEntry>();
+  for (const row of apptRows) {
+    if (!appointmentMap.has(row.appointmentId)) {
+      appointmentMap.set(row.appointmentId, {
+        appointment_id: row.appointmentId,
+        scheduled_at: row.scheduledAt.toISOString(),
+        payment_status: row.paymentStatus,
+        total_amount_cents: row.totalAmountCents ?? null,
+        treatments: [],
+      });
+    }
+    if (
+      row.treatmentName &&
+      row.quantity !== null &&
+      row.unitPriceCents !== null
+    ) {
+      appointmentMap.get(row.appointmentId)!.treatments.push({
+        name: row.treatmentName,
+        quantity: row.quantity,
+        unit_price_cents: row.unitPriceCents,
+      });
+    }
+  }
+
+  const history = Array.from(appointmentMap.values());
+
+  const unpaidEntries = history.filter(
+    (e) => e.payment_status === 'unpaid' || e.payment_status === 'partial'
+  );
+  const summary: PatientPaymentHistorySummary = {
+    unpaid_count: unpaidEntries.length,
+    unpaid_total_cents: unpaidEntries.reduce(
+      (sum, e) => sum + (e.total_amount_cents ?? 0),
+      0
+    ),
+  };
+
+  return { history, summary };
 }
 
 export async function remove(tenantId: string, id: string): Promise<boolean> {
