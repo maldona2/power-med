@@ -15,6 +15,7 @@ import {
 } from './mailService.js';
 import { syncQueue } from './syncQueue.js';
 import { googleAuthService } from './googleAuthService.js';
+import * as patientTreatmentService from './patientTreatmentService.js';
 
 async function enqueueSyncIfConnected(
   tenantId: string,
@@ -501,6 +502,29 @@ export async function create(
         unitPriceCents: t.unit_price_cents,
       }))
     );
+
+    // Auto-create or update PatientTreatment protocol records so the
+    // suggested-date feature has data to work with.
+    const existingPTs = await patientTreatmentService.listByPatient(
+      tenantId,
+      input.patient_id
+    );
+    for (const lineItem of input.treatments) {
+      const activePT = existingPTs.find(
+        (pt) => pt.treatment_id === lineItem.treatment_id && pt.is_active
+      );
+      if (activePT) {
+        await patientTreatmentService.updateProgress(tenantId, activePT.id, {
+          last_appointment_id: row.id,
+        });
+      } else {
+        await patientTreatmentService.create(tenantId, {
+          patient_id: input.patient_id,
+          treatment_id: lineItem.treatment_id,
+          last_appointment_id: row.id,
+        });
+      }
+    }
   }
 
   const result = toRow(row);

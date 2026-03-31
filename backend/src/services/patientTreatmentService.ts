@@ -26,6 +26,7 @@ export interface CreatePatientTreatmentInput {
   patient_id: string;
   treatment_id: string;
   current_session?: number;
+  last_appointment_id?: string | null;
 }
 
 export interface UpdatePatientTreatmentInput {
@@ -110,6 +111,7 @@ export async function create(
       patientId: data.patient_id,
       treatmentId: data.treatment_id,
       currentSession: data.current_session ?? 1,
+      lastAppointmentId: data.last_appointment_id ?? null,
       updatedAt: new Date(),
     })
     .returning();

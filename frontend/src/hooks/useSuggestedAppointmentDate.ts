@@ -22,21 +22,23 @@ function getPhaseAndFrequency(
   const treatment = pt.treatment;
   if (!treatment) return null;
 
-  // Mirrors backend patientTreatmentService.calculateNextAppointment logic:
-  // initial phase is "complete" only when initial_sessions_count is defined
-  // AND current_session has reached or exceeded it.
-  const initialPhaseComplete =
+  const hasInitialPhase =
+    treatment.initial_frequency_weeks !== null &&
     treatment.initial_sessions_count !== null &&
-    pt.current_session >= treatment.initial_sessions_count;
+    treatment.initial_sessions_count > 0;
 
-  if (!initialPhaseComplete && treatment.initial_frequency_weeks !== null) {
+  const inInitialPhase =
+    hasInitialPhase &&
+    pt.current_session <= (treatment.initial_sessions_count ?? 0);
+
+  if (inInitialPhase && treatment.initial_frequency_weeks !== null) {
     return {
       phase: 'initial',
       frequencyWeeks: treatment.initial_frequency_weeks,
     };
   }
 
-  if (initialPhaseComplete && treatment.maintenance_frequency_weeks !== null) {
+  if (treatment.maintenance_frequency_weeks !== null) {
     return {
       phase: 'maintenance',
       frequencyWeeks: treatment.maintenance_frequency_weeks,
