@@ -61,14 +61,14 @@
     {
       "idx": 8,
       "version": "7",
-      "when": 1742256000000,
+      "when": 1774022000000,
       "tag": "0008_treatment_protocol",
       "breakpoints": true
     },
     {
       "idx": 9,
       "version": "7",
-      "when": 1742256060000,
+      "when": 1774023000000,
       "tag": "0009_patient_treatment_completed_at",
       "breakpoints": true
     },
@@ -89,28 +89,28 @@
     {
       "idx": 12,
       "version": "7",
-      "when": 1742688000000,
+      "when": 1774026000000,
       "tag": "0012_daily_appointment_usage",
       "breakpoints": true
     },
     {
       "idx": 13,
       "version": "7",
-      "when": 1742860800000,
+      "when": 1774027000000,
       "tag": "0013_payment_tables",
       "breakpoints": true
     },
     {
       "idx": 14,
       "version": "7",
-      "when": 1743120000000,
+      "when": 1774028000000,
       "tag": "0014_appointment_reminders",
       "breakpoints": true
     },
     {
       "idx": 15,
       "version": "7",
-      "when": 1743206400000,
+      "when": 1774029000000,
       "tag": "0015_sessions_patient_cascade",
       "breakpoints": true
     }
