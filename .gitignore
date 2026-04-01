@@ -33,3 +33,9 @@ Thumbs.db
 backend/uploads/*
 !backend/uploads/.gitkeep
 sendgrid.env
+
+# AI local rules and skills (user-specific, not committed)
+.ai/local/rules/*
+!.ai/local/rules/.gitkeep
+.ai/local/skills/*
+!.ai/local/skills/.gitkeep
