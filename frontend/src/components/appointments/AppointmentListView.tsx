@@ -22,6 +22,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AppointmentCard } from './AppointmentCard';
 import type { Appointment } from '@/types';
+import { ContextualHelpButton } from '../help/ContextualHelpButton';
 
 interface AppointmentListViewProps {
   appointments: Appointment[];
@@ -104,6 +105,7 @@ export function AppointmentListView({
             <Badge variant="secondary" className="tabular-nums">
               {appointments.length}
             </Badge>
+            <ContextualHelpButton section="appointments" />
           </div>
           <div className="flex items-center gap-2">
             {viewToggle}

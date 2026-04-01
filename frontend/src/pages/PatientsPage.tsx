@@ -95,8 +95,8 @@ export function PatientsPage() {
                   {patients.length}
                 </Badge>
               )}
+              <ContextualHelpButton section="patients" />
             </div>
-            <ContextualHelpButton section="patients" />
             <Button size="sm" onClick={openCreate}>
               <Plus className="mr-1.5 h-4 w-4" />
               Nuevo
