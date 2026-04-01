@@ -43,12 +43,18 @@ function buildScheduledAt(date: Date, time: string): string {
   return combined.toISOString();
 }
 
-function getApiErrorMessage(error: unknown, operation: 'editar' | 'eliminar'): string {
+function getApiErrorMessage(
+  error: unknown,
+  operation: 'editar' | 'eliminar'
+): string {
   if (error && typeof error === 'object' && 'response' in error) {
-    const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
+    const axiosError = error as {
+      response?: { status?: number; data?: { message?: string } };
+    };
     const status = axiosError.response?.status;
     if (status === 404) return 'Turno no encontrado';
-    if (status === 403) return `No tienes permisos para ${operation} este turno`;
+    if (status === 403)
+      return `No tienes permisos para ${operation} este turno`;
     if (status === 400) {
       const msg = axiosError.response?.data?.message;
       if (msg) return msg;
@@ -73,12 +79,17 @@ const VALID_STATUSES: Appointment['status'][] = [
   'no-show',
 ];
 
-function validateAppointmentForm(formData: AppointmentEditFormData): ValidationErrors {
+function validateAppointmentForm(
+  formData: AppointmentEditFormData
+): ValidationErrors {
   const errors: ValidationErrors = {};
   if (!formData.scheduled_date) {
     errors.scheduled_date = 'La fecha es requerida';
   }
-  if (!formData.scheduled_time || !/^\d{2}:\d{2}$/.test(formData.scheduled_time)) {
+  if (
+    !formData.scheduled_time ||
+    !/^\d{2}:\d{2}$/.test(formData.scheduled_time)
+  ) {
     errors.scheduled_time = 'La hora es requerida';
   }
   if (
@@ -116,8 +127,12 @@ export function AppointmentDetailPanel({
 }: AppointmentDetailPanelProps) {
   const { detail, loading, refetch } = useAppointmentDetail(appointmentId);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [activeStatus, setActiveStatus] = useState<Appointment['status'] | null>(null);
-  const [activePayment, setActivePayment] = useState<PaymentStatus | null>(null);
+  const [activeStatus, setActiveStatus] = useState<
+    Appointment['status'] | null
+  >(null);
+  const [activePayment, setActivePayment] = useState<PaymentStatus | null>(
+    null
+  );
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Edit mode state
@@ -129,8 +144,11 @@ export function AppointmentDetailPanel({
     notes: '',
     status: 'pending',
   });
-  const [originalData, setOriginalData] = useState<AppointmentEditFormData | null>(null);
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [originalData, setOriginalData] =
+    useState<AppointmentEditFormData | null>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
+    {}
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -174,7 +192,10 @@ export function AppointmentDetailPanel({
   }, [originalData]);
 
   const handleFieldChange = useCallback(
-    (field: keyof AppointmentEditFormData, value: AppointmentEditFormData[keyof AppointmentEditFormData]) => {
+    (
+      field: keyof AppointmentEditFormData,
+      value: AppointmentEditFormData[keyof AppointmentEditFormData]
+    ) => {
       setFormData((prev) => {
         const next = { ...prev, [field]: value };
         const errors = validateAppointmentForm(next);
@@ -194,7 +215,10 @@ export function AppointmentDetailPanel({
     }
     setIsSaving(true);
     try {
-      const scheduledAt = buildScheduledAt(formData.scheduled_date!, formData.scheduled_time);
+      const scheduledAt = buildScheduledAt(
+        formData.scheduled_date!,
+        formData.scheduled_time
+      );
       await api.put(`/appointments/${detail.id}`, {
         scheduled_at: scheduledAt,
         duration_minutes: formData.duration_minutes,
@@ -292,7 +316,8 @@ export function AppointmentDetailPanel({
   }
 
   const scheduledDate = parseISO(detail.scheduled_at);
-  const isFormValid = Object.keys(validateAppointmentForm(formData)).length === 0;
+  const isFormValid =
+    Object.keys(validateAppointmentForm(formData)).length === 0;
 
   return (
     <>
@@ -482,9 +507,13 @@ export function AppointmentDetailPanel({
         onClose={() => !isDeleting && setShowDeleteDialog(false)}
         onConfirm={handleDeleteConfirm}
         isDeleting={isDeleting}
-        appointmentInfo={format(scheduledDate, "d 'de' MMMM 'de' yyyy 'a las' HH:mm", {
-          locale: es,
-        })}
+        appointmentInfo={format(
+          scheduledDate,
+          "d 'de' MMMM 'de' yyyy 'a las' HH:mm",
+          {
+            locale: es,
+          }
+        )}
       />
     </>
   );

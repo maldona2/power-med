@@ -5,6 +5,7 @@ import {
   formatICSTimestamp,
   formatUTCTimestamp,
 } from './icsFormatter.js';
+import { generateUID } from './icsGenerator.js';
 import fc from 'fast-check';
 
 describe('icsFormatter', () => {
@@ -331,5 +332,135 @@ describe('icsFormatter', () => {
 
       expect(result).toBe('20240105T090503Z');
     });
+  });
+});
+
+/**
+ * Bug Condition: Timezone-Aware Timestamp Formatting
+ *
+ * These tests MUST FAIL on unfixed code.
+ * Failure confirms the bug exists: formatICSTimestamp uses server-local time
+ * methods (getHours, etc.) instead of extracting time in the specified timezone.
+ *
+ * When formatICSTimestamp receives a date with an explicit UTC offset (e.g. -03:00),
+ * and the server runs in UTC, the local getHours() returns the UTC hour,
+ * not the Argentina hour — producing wrong ICS timestamps.
+ *
+ * Requirements: 2.1, 2.2, 2.3
+ */
+describe('Bug Condition: Timezone-Aware Timestamp Formatting', () => {
+  it('basic: produces Argentina local time (14:00) not UTC time (17:00)', () => {
+    // 2024-01-15 14:00 Argentina = 2024-01-15 17:00 UTC
+    // On a UTC server, getHours() returns 17 → wrong output: 20240115T170000
+    const date = new Date('2024-01-15T14:00:00-03:00');
+    const result = formatICSTimestamp(date, 'America/Argentina/Buenos_Aires');
+    expect(result).toBe('20240115T140000');
+  });
+
+  it('morning: produces Argentina local time (09:30) not UTC time (12:30)', () => {
+    // 2024-06-20 09:30 Argentina = 2024-06-20 12:30 UTC
+    const date = new Date('2024-06-20T09:30:00-03:00');
+    const result = formatICSTimestamp(date, 'America/Argentina/Buenos_Aires');
+    expect(result).toBe('20240620T093000');
+  });
+
+  it('evening: produces Argentina local time (18:00) not UTC time (21:00)', () => {
+    // 2024-12-01 18:00 Argentina = 2024-12-01 21:00 UTC
+    const date = new Date('2024-12-01T18:00:00-03:00');
+    const result = formatICSTimestamp(date, 'America/Argentina/Buenos_Aires');
+    expect(result).toBe('20241201T180000');
+  });
+});
+
+/**
+ * Preservation: UTC Timestamp Generation and ICS Formatting
+ *
+ * These tests MUST PASS on unfixed code, confirming baseline behaviour to preserve.
+ * They cover formatUTCTimestamp, escapeICSText, foldLine, and generateUID.
+ *
+ * Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6
+ */
+describe('Preservation: UTC Timestamp Generation and ICS Formatting', () => {
+  /**
+   * Property: formatUTCTimestamp always ends with 'Z' and reflects UTC time.
+   * Restricted to years 1000–9999 to avoid sub-4-digit year edge cases that
+   * the function does not pad (ICS only encounters modern dates in practice).
+   */
+  it('property: formatUTCTimestamp ends with Z and matches UTC time', () => {
+    // Dates between 2000-01-01 and 2099-12-31 UTC — realistic appointment range
+    // Filter out NaN dates that fc.date() can occasionally emit
+    const modernDate = fc
+      .date({
+        min: new Date('2000-01-01T00:00:00.000Z'),
+        max: new Date('2099-12-31T23:59:59.000Z'),
+      })
+      .filter((d) => !isNaN(d.getTime()));
+
+    fc.assert(
+      fc.property(modernDate, (d: Date) => {
+        const result = formatUTCTimestamp(d);
+        // Must match pattern YYYYMMDDTHHmmssZ
+        expect(result).toMatch(/^\d{8}T\d{6}Z$/);
+        // Must end with Z
+        expect(result.endsWith('Z')).toBe(true);
+        // Verify each UTC component is correctly embedded
+        const year = String(d.getUTCFullYear()).padStart(4, '0');
+        const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(d.getUTCDate()).padStart(2, '0');
+        const hours = String(d.getUTCHours()).padStart(2, '0');
+        const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(d.getUTCSeconds()).padStart(2, '0');
+        expect(result).toBe(
+          `${year}${month}${day}T${hours}${minutes}${seconds}Z`
+        );
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Property: escapeICSText never contains unescaped special characters.
+   */
+  it('property: escapeICSText removes raw newlines and carriage returns', () => {
+    fc.assert(
+      fc.property(fc.string(), (text: string) => {
+        const escaped = escapeICSText(text);
+        expect(escaped).not.toContain('\n');
+        expect(escaped).not.toContain('\r');
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Property: foldLine output lines never exceed 75 octets.
+   */
+  it('property: foldLine produces lines of 75 octets or fewer', () => {
+    fc.assert(
+      fc.property(
+        fc.string({ minLength: 0, maxLength: 500 }),
+        (line: string) => {
+          const folded = foldLine(line);
+          for (const segment of folded.split('\r\n')) {
+            expect(segment.length).toBeLessThanOrEqual(75);
+          }
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Property: generateUID always produces format appointment-{id}@anamnesia.pro.
+   * Uses fc.uuid() to generate valid UUID v4 strings as required by generateUID.
+   */
+  it('property: generateUID produces deterministic format for any valid UUID', () => {
+    fc.assert(
+      fc.property(fc.uuid(), (id: string) => {
+        const uid = generateUID(id);
+        expect(uid).toBe(`appointment-${id}@anamnesia.pro`);
+      }),
+      { numRuns: 100 }
+    );
   });
 });

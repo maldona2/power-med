@@ -50,8 +50,10 @@ export function DeleteConfirmationDialog({
           </div>
           <DialogDescription>
             ¿Estás seguro que deseas eliminar el turno del{' '}
-            <span className="font-medium text-foreground">{appointmentInfo}</span>?
-            Esta acción no se puede deshacer.
+            <span className="font-medium text-foreground">
+              {appointmentInfo}
+            </span>
+            ? Esta acción no se puede deshacer.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

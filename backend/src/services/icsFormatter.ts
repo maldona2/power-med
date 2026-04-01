@@ -105,15 +105,49 @@ export function formatICSLine(
  *
  * Supports two formats:
  * - UTC format: YYYYMMDDTHHmmssZ (when timezone is not provided)
- * - Local format with TZID: DTSTART;TZID=America/Argentina/Buenos_Aires:YYYYMMDDTHHmmss
+ * - Timezone-aware local format: YYYYMMDDTHHmmss (when timezone is provided)
+ *
+ * When a timezone is provided, time components are extracted in that timezone
+ * using Intl.DateTimeFormat, ensuring correct output regardless of the server's
+ * local timezone.
  *
  * Requirement 1.5: Format timestamps in UTC with TZID parameter for local timezone
  *
  * @param date - The date to format
- * @param timezone - Optional timezone identifier (e.g., "America/Argentina/Buenos_Aires")
+ * @param timezone - Optional IANA timezone identifier (e.g., "America/Argentina/Buenos_Aires")
  * @returns The formatted timestamp string
  */
 export function formatICSTimestamp(date: Date, timezone?: string): string {
+  if (timezone) {
+    // Extract time components in the specified timezone, not the server's local timezone
+    const formatted = date.toLocaleString('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+
+    // toLocaleString returns e.g. "01/15/2024, 14:00:00"
+    const match = formatted.match(
+      /^(\d{2})\/(\d{2})\/(\d{4}),\s*(\d{2}):(\d{2}):(\d{2})$/
+    );
+    if (!match) {
+      throw new Error(
+        `formatICSTimestamp: unexpected locale format "${formatted}" for timezone "${timezone}"`
+      );
+    }
+
+    const [, month, day, year, hours, minutes, seconds] = match;
+    // Normalize hour 24 (midnight expressed as 24:00:00) to 00
+    const normalizedHours = hours === '24' ? '00' : hours;
+    return `${year}${month}${day}T${normalizedHours}${minutes}${seconds}`;
+  }
+
+  // No timezone: fall back to server-local time components (UTC path handled by formatUTCTimestamp)
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -121,15 +155,7 @@ export function formatICSTimestamp(date: Date, timezone?: string): string {
   const minutes = String(date.getMinutes()).padStart(2, '0');
   const seconds = String(date.getSeconds()).padStart(2, '0');
 
-  const timestamp = `${year}${month}${day}T${hours}${minutes}${seconds}`;
-
-  if (timezone) {
-    // Local time with TZID parameter
-    return timestamp;
-  } else {
-    // UTC format
-    return `${timestamp}Z`;
-  }
+  return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
 }
 
 /**

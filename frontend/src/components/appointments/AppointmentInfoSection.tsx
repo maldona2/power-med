@@ -1,6 +1,12 @@
 import { parseISO, format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarIcon, Clock, Timer, FileText, AlertCircle } from 'lucide-react';
+import {
+  CalendarIcon,
+  Clock,
+  Timer,
+  FileText,
+  AlertCircle,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
