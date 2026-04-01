@@ -87,7 +87,7 @@ export function DataTableToolbar<TData>({
                     className="h-8 w-40 lg:w-64"
                   />
                   <Button
-                    aria-label="Apply filters"
+                    aria-label="Aplicar filtros"
                     variant="outline"
                     className="h-8 px-2 lg:px-3"
                     onClick={handleSearch}
@@ -113,7 +113,7 @@ export function DataTableToolbar<TData>({
           )}
         {hasSearchValues && (
           <Button
-            aria-label="Reset filters"
+            aria-label="Limpiar filtros"
             variant="destructive"
             className="h-8 px-2 lg:px-3"
             onClick={handleReset}

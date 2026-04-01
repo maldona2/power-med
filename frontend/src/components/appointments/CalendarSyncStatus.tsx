@@ -32,22 +32,22 @@ const statusConfig: Record<
 > = {
   synced: {
     icon: <CheckCircle2 className="h-3 w-3" />,
-    label: 'Synced',
+    label: 'Sincronizado',
     className: 'bg-green-100 text-green-800 border-green-200',
   },
   pending: {
     icon: <Clock className="h-3 w-3" />,
-    label: 'Pending',
+    label: 'Pendiente',
     className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   },
   failed: {
     icon: <XCircle className="h-3 w-3" />,
-    label: 'Sync failed',
+    label: 'Sincronización fallida',
     className: 'bg-red-100 text-red-800 border-red-200',
   },
   unsynced: {
     icon: <Calendar className="h-3 w-3" />,
-    label: 'Not synced',
+    label: 'No sincronizado',
     className: 'bg-gray-100 text-gray-600 border-gray-200',
   },
 };
@@ -95,10 +95,10 @@ export function CalendarSyncStatus({
     setLoading(true);
     try {
       await api.post(`/calendar/sync/${appointmentId}/retry`);
-      toast.success('Sync retry started');
+      toast.success('Reintento de sincronización iniciado');
       await fetchSyncStatus();
     } catch {
-      toast.error('Failed to retry sync');
+      toast.error('Error al reintentar la sincronización');
     } finally {
       setLoading(false);
     }
@@ -108,10 +108,10 @@ export function CalendarSyncStatus({
     setLoading(true);
     try {
       await api.post(`/calendar/sync/${appointmentId}`);
-      toast.success('Synced to Google Calendar');
+      toast.success('Sincronizado con Google Calendar');
       await fetchSyncStatus();
     } catch {
-      toast.error('Failed to sync to Google Calendar');
+      toast.error('Error al sincronizar con Google Calendar');
     } finally {
       setLoading(false);
     }
@@ -143,12 +143,12 @@ export function CalendarSyncStatus({
           className="h-6 px-2 text-xs"
           onClick={handleRetry}
           disabled={loading}
-          title={syncData?.errorMessage ?? 'Retry sync'}
+          title={syncData?.errorMessage ?? 'Reintentar sincronización'}
         >
           <RefreshCw
             className={`mr-1 h-3 w-3 ${loading ? 'animate-spin' : ''}`}
           />
-          Retry
+          Reintentar
         </Button>
       )}
 
@@ -161,7 +161,7 @@ export function CalendarSyncStatus({
           disabled={loading}
         >
           <Calendar className="mr-1 h-3 w-3" />
-          Sync
+          Sincronizar
         </Button>
       )}
     </div>

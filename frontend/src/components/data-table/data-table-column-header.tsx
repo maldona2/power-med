@@ -40,10 +40,10 @@ export function DataTableColumnHeader<TData, TValue>({
           <Button
             aria-label={
               column.getIsSorted() === 'desc'
-                ? 'Sorted descending. Click to sort ascending.'
+                ? 'Ordenado descendente. Haz clic para ordenar ascendente.'
                 : column.getIsSorted() === 'asc'
-                  ? 'Sorted ascending. Click to sort descending.'
-                  : 'Not sorted. Click to sort ascending.'
+                  ? 'Ordenado ascendente. Haz clic para ordenar descendente.'
+                  : 'Sin ordenar. Haz clic para ordenar ascendente.'
             }
             variant="ghost"
             size="sm"
@@ -63,7 +63,7 @@ export function DataTableColumnHeader<TData, TValue>({
           {column.getCanSort() && (
             <>
               <DropdownMenuItem
-                aria-label="Sort ascending"
+                aria-label="Ordenar ascendente"
                 onClick={() => column.toggleSorting(false)}
               >
                 <ArrowUpIcon
@@ -73,7 +73,7 @@ export function DataTableColumnHeader<TData, TValue>({
                 Asc
               </DropdownMenuItem>
               <DropdownMenuItem
-                aria-label="Sort descending"
+                aria-label="Ordenar descendente"
                 onClick={() => column.toggleSorting(true)}
               >
                 <ArrowDownIcon
@@ -89,14 +89,14 @@ export function DataTableColumnHeader<TData, TValue>({
           )}
           {column.getCanHide() && (
             <DropdownMenuItem
-              aria-label="Hide column"
+              aria-label="Ocultar columna"
               onClick={() => column.toggleVisibility(false)}
             >
               <EyeNoneIcon
                 className="mr-2 size-3.5 text-muted-foreground/70"
                 aria-hidden="true"
               />
-              Hide
+              Ocultar
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

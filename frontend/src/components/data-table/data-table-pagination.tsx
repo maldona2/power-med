@@ -59,7 +59,7 @@ export function DataTablePagination<TData>({
         </div>
         <div className="flex items-center space-x-2">
           <Button
-            aria-label="Go to first page"
+            aria-label="Ir a la primera página"
             variant="outline"
             className="hidden size-8 p-0 lg:flex"
             onClick={() => table.setPageIndex(0)}
@@ -68,7 +68,7 @@ export function DataTablePagination<TData>({
             <DoubleArrowLeftIcon className="size-4" aria-hidden="true" />
           </Button>
           <Button
-            aria-label="Go to previous page"
+            aria-label="Ir a la página anterior"
             variant="outline"
             size="icon"
             className="size-8"
@@ -78,7 +78,7 @@ export function DataTablePagination<TData>({
             <ChevronLeftIcon className="size-4" aria-hidden="true" />
           </Button>
           <Button
-            aria-label="Go to next page"
+            aria-label="Ir a la siguiente página"
             variant="outline"
             size="icon"
             className="size-8"
@@ -88,7 +88,7 @@ export function DataTablePagination<TData>({
             <ChevronRightIcon className="size-4" aria-hidden="true" />
           </Button>
           <Button
-            aria-label="Go to last page"
+            aria-label="Ir a la última página"
             variant="outline"
             size="icon"
             className="hidden size-8 lg:flex"

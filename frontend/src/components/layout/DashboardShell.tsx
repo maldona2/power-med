@@ -236,7 +236,7 @@ export function DashboardShell({
               variant="ghost"
               size="icon-sm"
               onClick={() => setCollapsed(true)}
-              aria-label="Collapse sidebar"
+              aria-label="Contraer barra lateral"
             >
               <ChevronLeft className="size-4" />
             </Button>
@@ -249,7 +249,7 @@ export function DashboardShell({
               variant="ghost"
               size="icon-sm"
               onClick={() => setCollapsed(false)}
-              aria-label="Expand sidebar"
+              aria-label="Expandir barra lateral"
             >
               <Menu className="size-4" />
             </Button>
@@ -332,7 +332,7 @@ export function DashboardShell({
               size="icon"
               className="md:hidden"
               onClick={() => setMobileOpen(true)}
-              aria-label="Open menu"
+              aria-label="Abrir menú"
             >
               <Menu className="size-5" />
             </Button>

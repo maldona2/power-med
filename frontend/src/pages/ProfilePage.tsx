@@ -274,7 +274,7 @@ export function ProfilePage() {
                   className="h-9 px-2.5 sm:px-3"
                 >
                   <span className="hidden sm:inline">Cancelar</span>
-                  <span className="sm:hidden">Cancel</span>
+                  <span className="sm:hidden">Cancelar</span>
                 </Button>
                 <Button
                   size="sm"

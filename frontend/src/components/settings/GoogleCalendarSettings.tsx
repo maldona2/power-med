@@ -39,7 +39,7 @@ export function GoogleCalendarSettings() {
     const calendarError = searchParams.get('calendar_error');
 
     if (calendarConnected === 'true') {
-      setSuccessMessage('Google Calendar connected successfully!');
+      setSuccessMessage('¡Google Calendar conectado exitosamente!');
       setSearchParams((prev) => {
         prev.delete('calendar_connected');
         return prev;
@@ -47,7 +47,7 @@ export function GoogleCalendarSettings() {
     }
 
     if (calendarError) {
-      setError(`Google OAuth error: ${calendarError}`);
+      setError(`Error de Google OAuth: ${calendarError}`);
       setSearchParams((prev) => {
         prev.delete('calendar_error');
         return prev;
@@ -65,7 +65,7 @@ export function GoogleCalendarSettings() {
       const res = await api.get<CalendarStatus>('/calendar/status');
       setStatus(res.data);
     } catch {
-      setError('Failed to load Google Calendar status.');
+      setError('Error al cargar el estado de Google Calendar.');
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ export function GoogleCalendarSettings() {
       const res = await api.get<{ url: string }>('/auth/google/calendar');
       window.location.href = res.data.url;
     } catch {
-      setError('Failed to initiate Google Calendar connection.');
+      setError('Error al iniciar la conexión con Google Calendar.');
       setActionLoading(false);
     }
   }
@@ -86,7 +86,7 @@ export function GoogleCalendarSettings() {
   async function handleDisconnect() {
     if (
       !window.confirm(
-        'Disconnect Google Calendar? All synced events will be removed from your calendar.'
+        '¿Desconectar Google Calendar? Todos los eventos sincronizados serán eliminados de tu calendario.'
       )
     ) {
       return;
@@ -96,10 +96,10 @@ export function GoogleCalendarSettings() {
       setActionLoading(true);
       setError(null);
       await api.delete('/calendar/disconnect');
-      setSuccessMessage('Google Calendar disconnected successfully.');
+      setSuccessMessage('Google Calendar desconectado exitosamente.');
       await fetchStatus();
     } catch {
-      setError('Failed to disconnect Google Calendar.');
+      setError('Error al desconectar Google Calendar.');
     } finally {
       setActionLoading(false);
     }
@@ -111,10 +111,10 @@ export function GoogleCalendarSettings() {
       setError(null);
       await api.post('/calendar/sync/all');
       setSuccessMessage(
-        'Sync started! Your appointments will be synced shortly.'
+        '¡Sincronización iniciada! Tus turnos se sincronizarán en breve.'
       );
     } catch {
-      setError('Failed to trigger sync.');
+      setError('Error al iniciar la sincronización.');
     } finally {
       setActionLoading(false);
     }
@@ -130,7 +130,7 @@ export function GoogleCalendarSettings() {
           <div>
             <CardTitle>Google Calendar</CardTitle>
             <CardDescription>
-              Sync your confirmed appointments to Google Calendar
+              Sincroniza tus turnos confirmados con Google Calendar
             </CardDescription>
           </div>
         </div>
@@ -156,18 +156,18 @@ export function GoogleCalendarSettings() {
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <RefreshCw className="h-4 w-4 animate-spin" />
-            Loading status...
+            Cargando estado...
           </div>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Status</span>
+                <span className="text-sm font-medium">Estado</span>
               </div>
               {status?.connected ? (
                 <Badge className="gap-1 bg-green-100 text-green-800 hover:bg-green-100">
                   <CheckCircle2 className="h-3 w-3" />
-                  Connected
+                  Conectado
                 </Badge>
               ) : (
                 <Badge
@@ -175,14 +175,14 @@ export function GoogleCalendarSettings() {
                   className="gap-1 text-muted-foreground"
                 >
                   <XCircle className="h-3 w-3" />
-                  Not connected
+                  No conectado
                 </Badge>
               )}
             </div>
 
             {status?.connected && status.tokenExpiresAt && (
               <p className="text-xs text-muted-foreground">
-                Token expires:{' '}
+                Token expira:{' '}
                 {new Date(status.tokenExpiresAt).toLocaleDateString()}
               </p>
             )}
@@ -199,7 +199,7 @@ export function GoogleCalendarSettings() {
                     <RefreshCw
                       className={`mr-2 h-4 w-4 ${actionLoading ? 'animate-spin' : ''}`}
                     />
-                    Sync All Appointments
+                    Sincronizar todos los turnos
                   </Button>
                   <Button
                     variant="destructive"
@@ -208,7 +208,7 @@ export function GoogleCalendarSettings() {
                     disabled={actionLoading}
                   >
                     <Link2Off className="mr-2 h-4 w-4" />
-                    Disconnect
+                    Desconectar
                   </Button>
                 </>
               ) : (
@@ -218,15 +218,15 @@ export function GoogleCalendarSettings() {
                   disabled={actionLoading}
                 >
                   <Link2 className="mr-2 h-4 w-4" />
-                  Connect Google Calendar
+                  Conectar Google Calendar
                 </Button>
               )}
             </div>
 
             {status?.connected && (
               <p className="text-xs text-muted-foreground">
-                Confirmed appointments are automatically synced. Cancellations
-                remove events from your calendar.
+                Los turnos confirmados se sincronizan automáticamente. Las
+                cancelaciones eliminan los eventos de tu calendario.
               </p>
             )}
           </div>
