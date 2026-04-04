@@ -70,6 +70,11 @@ Reglas de extracción:
 Mapeo OBLIGATORIO de operaciones:
 - "cancelar/anular turno/cita" → operation:"update" + entity:"appointment" + params:{status:"cancelled", patient_name:"..."} — NUNCA usar operation:"delete" para cancelaciones
 - "eliminar/borrar turno/cita" → operation:"delete" + entity:"appointment"
+- "crear/nuevo/registrar paciente [nombre] [apellido]" → operation:"create", entity:"patient", params:{first_name:"...", last_name:"..."}
+- "nuevo paciente" / "crear paciente" → operation:"create", entity:"patient", params:{}
+- "listar/mostrar/ver pacientes" → operation:"list", entity:"patient"
+- "ver/mostrar paciente [nombre]" → operation:"read", entity:"patient", params:{patient_name:"..."}
+- "actualizar/modificar paciente [nombre]" → operation:"update", entity:"patient", params:{patient_name:"..."}
 - "eliminar/borrar paciente" → operation:"delete" + entity:"patient"
 - "confirmar turno" → operation:"update" + entity:"appointment" + params:{status:"confirmed"}
 - "reprogramar/mover turno" → operation:"update" + entity:"appointment"
@@ -443,6 +448,17 @@ export class IntentRecognizer {
         { text, operation, entity, confidence },
         'Intent recognized via OpenAI'
       );
+
+      if (operation === 'unknown') {
+        const fallback = patternMatchIntent(text);
+        if (fallback.operation !== 'unknown') {
+          logger.info(
+            { text, operation: fallback.operation, entity: fallback.entity },
+            'OpenAI returned unknown, pattern matching rescued intent'
+          );
+          return fallback;
+        }
+      }
 
       return { operation, entity, params, confidence, rawText: text };
     } catch (err) {

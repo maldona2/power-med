@@ -56,6 +56,26 @@ function getRequiredParams(
         return [
           { field: 'first_name', prompt: '¿Cuál es el nombre del paciente?' },
           { field: 'last_name', prompt: '¿Cuál es el apellido del paciente?' },
+          {
+            field: 'phone',
+            prompt:
+              '¿Cuál es el teléfono del paciente? (o escribí "omitir" para saltear)',
+          },
+          {
+            field: 'email',
+            prompt:
+              '¿Cuál es el email del paciente? (o escribí "omitir" para saltear)',
+          },
+          {
+            field: 'date_of_birth',
+            prompt:
+              '¿Cuál es la fecha de nacimiento? DD/MM/AAAA (o escribí "omitir" para saltear)',
+          },
+          {
+            field: 'patient_notes',
+            prompt:
+              '¿Alguna nota clínica adicional? (o escribí "omitir" para saltear)',
+          },
         ];
       }
       if (operation === 'update' || operation === 'delete') {
@@ -161,6 +181,14 @@ export function findMissingParam(
       const hasPrice =
         !!intent.params.price_cents || !!intent.params.price;
       if (!hasPrice) return spec;
+    } else if (
+      field === 'phone' ||
+      field === 'email' ||
+      field === 'date_of_birth' ||
+      field === 'patient_notes'
+    ) {
+      // Optional fields: undefined means not yet asked; null means user chose to skip
+      if (intent.params[field] === undefined) return spec;
     } else {
       if (!intent.params[field]) return spec;
     }

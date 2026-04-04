@@ -499,6 +499,7 @@ Puedo ayudarte con las siguientes operaciones:
   unknown(originalText?: string): string {
     const examples = [
       '"Crear turno para [nombre] el [fecha] a las [hora]"',
+      '"Nuevo paciente [nombre] [apellido]"',
       '"Buscar paciente [nombre]"',
       '"Mostrar turnos de hoy"',
       '"Cancelar turno de [nombre]"',

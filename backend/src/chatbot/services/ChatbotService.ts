@@ -83,6 +83,13 @@ function injectFieldValue(
       const parts = value.split(/\s+/);
       return { last_name: parts.slice(1).join(' ') || value };
     }
+    case 'phone':
+    case 'email':
+    case 'date_of_birth':
+    case 'patient_notes': {
+      const isSkip = /^(omitir|saltar|no|ninguna?|sin|-)$/i.test(value.trim());
+      return { [field]: isSkip ? null : value };
+    }
     default:
       return { [field]: value };
   }
