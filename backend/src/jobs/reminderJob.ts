@@ -1,11 +1,5 @@
 import { and, between, eq, inArray } from 'drizzle-orm';
-import {
-  db,
-  appointments,
-  patients,
-  users,
-  whatsappVerifications,
-} from '../db/client.js';
+import { db, appointments, patients, users } from '../db/client.js';
 import { sendAppointmentReminder } from '../services/mailService.js';
 import {
   hasReminderBeenSent,
@@ -13,10 +7,8 @@ import {
   recordDelivery,
   getSuccessRate,
 } from '../services/reminderService.js';
-import { MetaAPIClient } from '../whatsapp/services/MetaAPIClient.js';
+import { whatsAppNotificationService } from '../whatsapp/services/WhatsAppNotificationService.js';
 import logger from '../utils/logger.js';
-
-const metaClient = new MetaAPIClient();
 
 const BATCH_SIZE = 100;
 const MAX_RETRIES = 3;
@@ -101,7 +93,6 @@ export async function sendReminders(): Promise<void> {
         fullName: users.fullName,
         subscriptionPlan: users.subscriptionPlan,
         subscriptionStatus: users.subscriptionStatus,
-        userId: users.id,
       })
       .from(users)
       .where(
@@ -111,42 +102,7 @@ export async function sendReminders(): Promise<void> {
         )
       );
 
-    // Fetch verified WhatsApp phones for Gold plan professionals
-    const goldUserIds = professionals
-      .filter(
-        (p) =>
-          p.subscriptionPlan === 'gold' && p.subscriptionStatus === 'active'
-      )
-      .map((p) => p.userId)
-      .filter((id): id is string => id !== null);
-
-    const whatsappPhones =
-      goldUserIds.length > 0
-        ? await db
-            .select({
-              userId: whatsappVerifications.userId,
-              phoneNumber: whatsappVerifications.phoneNumber,
-            })
-            .from(whatsappVerifications)
-            .where(
-              and(
-                inArray(whatsappVerifications.userId, goldUserIds),
-                eq(whatsappVerifications.isVerified, true)
-              )
-            )
-        : [];
-
-    const whatsappPhoneByTenant = new Map<string, string>();
-    for (const prof of professionals) {
-      const wp = whatsappPhones.find((w) => w.userId === prof.userId);
-      if (wp && prof.tenantId) {
-        whatsappPhoneByTenant.set(prof.tenantId, wp.phoneNumber);
-      }
-    }
-
-    const profByTenant = new Map(
-      professionals.map((p) => [p.tenantId, p.fullName])
-    );
+    const profByTenant = new Map(professionals.map((p) => [p.tenantId, p]));
 
     // Process in batches of BATCH_SIZE
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
@@ -182,9 +138,9 @@ export async function sendReminders(): Promise<void> {
             continue;
           }
 
-          const professionalName =
-            profByTenant.get(row.tenantId) ?? 'El profesional';
-          const emailData = {
+          const prof = profByTenant.get(row.tenantId);
+          const professionalName = prof?.fullName ?? 'El profesional';
+          const notificationData = {
             patientName: `${row.patientFirstName} ${row.patientLastName}`,
             professionalName,
             scheduledAt: row.scheduledAt ?? new Date(),
@@ -195,7 +151,11 @@ export async function sendReminders(): Promise<void> {
           let sendError: string | null = null;
 
           try {
-            await sendWithRetry(row.patientEmail, emailData, row.appointmentId);
+            await sendWithRetry(
+              row.patientEmail,
+              notificationData,
+              row.appointmentId
+            );
           } catch (err) {
             retryCount = MAX_RETRIES;
             sendError = err instanceof Error ? err.message : String(err);
@@ -223,28 +183,14 @@ export async function sendReminders(): Promise<void> {
             });
             totalSent++;
 
-            // Send WhatsApp reminder if the tenant has a verified Gold plan phone
-            const patientPhone = row.patientPhone;
-            if (patientPhone && whatsappPhoneByTenant.has(row.tenantId)) {
-              const professionalName =
-                profByTenant.get(row.tenantId) ?? 'El profesional';
-              const scheduledDate = (
-                row.scheduledAt ?? new Date()
-              ).toLocaleString('es-AR', {
-                timeZone: 'America/Argentina/Buenos_Aires',
-                dateStyle: 'full',
-                timeStyle: 'short',
-              });
-              const whatsappText =
-                `🏥 *Recordatorio de turno*\n\n` +
-                `Hola ${row.patientFirstName}, te recordamos que tienes un turno mañana.\n\n` +
-                `👨‍⚕️ *Profesional:* ${professionalName}\n` +
-                `📅 *Fecha y hora:* ${scheduledDate}\n` +
-                `⏱ *Duración:* ${row.durationMinutes ?? 60} min\n\n` +
-                `Para cancelar o reprogramar, responde a este mensaje.`;
-
-              metaClient
-                .sendTextMessage(patientPhone, whatsappText)
+            // Send WhatsApp reminder to patient if they have a phone number
+            // and the professional is on Gold plan
+            const isGold =
+              prof?.subscriptionPlan === 'gold' &&
+              prof?.subscriptionStatus === 'active';
+            if (row.patientPhone && isGold) {
+              void whatsAppNotificationService
+                .sendAppointmentReminder(row.patientPhone, notificationData)
                 .catch((err) => {
                   logger.warn(
                     { err, appointmentId: row.appointmentId },

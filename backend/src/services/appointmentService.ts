@@ -13,6 +13,7 @@ import {
   sendAppointmentConfirmed,
   sendAppointmentCancelled,
 } from './mailService.js';
+import { whatsAppNotificationService } from '../whatsapp/services/WhatsAppNotificationService.js';
 import { syncQueue } from './syncQueue.js';
 import { googleAuthService } from './googleAuthService.js';
 import * as patientTreatmentService from './patientTreatmentService.js';
@@ -434,6 +435,7 @@ async function getEmailContext(
   const [patient] = await db
     .select({
       email: patients.email,
+      phone: patients.phone,
       firstName: patients.firstName,
       lastName: patients.lastName,
     })
@@ -449,6 +451,7 @@ async function getEmailContext(
 
   return {
     patientEmail: patient?.email ?? null,
+    patientPhone: patient?.phone ?? null,
     patientName: patient
       ? `${patient.firstName} ${patient.lastName}`
       : 'Paciente',
@@ -529,24 +532,27 @@ export async function create(
 
   const result = toRow(row);
 
-  // fire-and-forget email
+  // fire-and-forget notifications
   void getEmailContext(
     tenantId,
     input.patient_id,
     row.scheduledAt,
     row.durationMinutes
   ).then((ctx) => {
+    const notificationData = {
+      patientName: ctx.patientName,
+      professionalName: ctx.professionalName,
+      scheduledAt: ctx.scheduledAt,
+      durationMinutes: ctx.durationMinutes,
+      notes: input.notes ?? null,
+    };
     if (ctx.patientEmail) {
-      sendAppointmentBooked(
-        ctx.patientEmail,
-        {
-          patientName: ctx.patientName,
-          professionalName: ctx.professionalName,
-          scheduledAt: ctx.scheduledAt,
-          durationMinutes: ctx.durationMinutes,
-          notes: input.notes ?? null,
-        },
-        row.id
+      sendAppointmentBooked(ctx.patientEmail, notificationData, row.id);
+    }
+    if (ctx.patientPhone) {
+      void whatsAppNotificationService.sendAppointmentBooked(
+        ctx.patientPhone,
+        notificationData
       );
     }
   });
@@ -644,7 +650,7 @@ export async function update(
 
   if (!row) return null;
 
-  // fire-and-forget email on status changes that patients care about
+  // fire-and-forget notifications on status changes that patients care about
   if (data.status === 'confirmed' || data.status === 'cancelled') {
     void getEmailContext(
       tenantId,
@@ -652,17 +658,31 @@ export async function update(
       row.scheduledAt,
       row.durationMinutes
     ).then((ctx) => {
-      if (!ctx.patientEmail) return;
-      const emailData = {
+      const notificationData = {
         patientName: ctx.patientName,
         professionalName: ctx.professionalName,
         scheduledAt: ctx.scheduledAt,
         durationMinutes: ctx.durationMinutes,
       };
-      if (data.status === 'confirmed') {
-        sendAppointmentConfirmed(ctx.patientEmail, emailData, row.id);
-      } else {
-        sendAppointmentCancelled(ctx.patientEmail, emailData, row.id);
+      if (ctx.patientEmail) {
+        if (data.status === 'confirmed') {
+          sendAppointmentConfirmed(ctx.patientEmail, notificationData, row.id);
+        } else {
+          sendAppointmentCancelled(ctx.patientEmail, notificationData, row.id);
+        }
+      }
+      if (ctx.patientPhone) {
+        if (data.status === 'confirmed') {
+          void whatsAppNotificationService.sendAppointmentConfirmed(
+            ctx.patientPhone,
+            notificationData
+          );
+        } else {
+          void whatsAppNotificationService.sendAppointmentCancelled(
+            ctx.patientPhone,
+            notificationData
+          );
+        }
       }
     });
   }
@@ -702,16 +722,19 @@ export async function cancel(
     row.scheduledAt,
     row.durationMinutes
   ).then((ctx) => {
+    const notificationData = {
+      patientName: ctx.patientName,
+      professionalName: ctx.professionalName,
+      scheduledAt: ctx.scheduledAt,
+      durationMinutes: ctx.durationMinutes,
+    };
     if (ctx.patientEmail) {
-      sendAppointmentCancelled(
-        ctx.patientEmail,
-        {
-          patientName: ctx.patientName,
-          professionalName: ctx.professionalName,
-          scheduledAt: ctx.scheduledAt,
-          durationMinutes: ctx.durationMinutes,
-        },
-        row.id
+      sendAppointmentCancelled(ctx.patientEmail, notificationData, row.id);
+    }
+    if (ctx.patientPhone) {
+      void whatsAppNotificationService.sendAppointmentCancelled(
+        ctx.patientPhone,
+        notificationData
       );
     }
   });

@@ -1,9 +1,7 @@
 /**
- * TypeScript interfaces for the WhatsApp Bot module.
+ * TypeScript interfaces for the WhatsApp notifications module.
  * Uses Meta Cloud API as the underlying provider.
  */
-
-export type { ConversationContext } from '../chatbot/types.js';
 
 // ─── Meta Cloud API webhook payload shapes ────────────────────────────────────
 
@@ -54,27 +52,6 @@ export interface MetaWebhookPayload {
 }
 
 // ─── Internal service interfaces ──────────────────────────────────────────────
-
-export interface IncomingWhatsAppMessage {
-  tenantId: string;
-  phoneNumber: string; // E.164 format with leading +
-  text: string;
-  metaMessageId: string;
-}
-
-export interface WhatsAppSessionRecord {
-  id: string;
-  tenantId: string;
-  phoneNumber: string;
-  context: import('../chatbot/types.js').ConversationContext;
-  lastMessageAt: Date | null;
-  expiresAt: Date;
-}
-
-export interface PhoneVerificationResult {
-  success: boolean;
-  message: string;
-}
 
 export interface MetaApiSendResult {
   success: boolean;

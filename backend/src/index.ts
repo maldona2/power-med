@@ -11,7 +11,6 @@ import { initializeSubscriptionSystem } from './subscriptions/init.js';
 import { runMonthlyBillingReset } from './subscriptions/services/BillingResetJob.js';
 import { runDailyRecordingReset } from './subscriptions/services/DailyRecordingResetJob.js';
 import { runCleanupPendingPhotos } from './jobs/cleanupPendingPhotos.js';
-import { SessionManager } from './whatsapp/services/SessionManager.js';
 
 dotenv.config();
 
@@ -86,13 +85,6 @@ function setupScheduledJobs() {
   // Every 30 minutes — delete stale pending photos
   runCleanupPendingPhotos();
   setInterval(() => void runCleanupPendingPhotos(), 30 * 60 * 1000);
-
-  // Every 6 hours — clean up expired WhatsApp conversation sessions
-  const sessionManager = new SessionManager();
-  setInterval(
-    () => void sessionManager.cleanupExpiredSessions(),
-    6 * 60 * 60 * 1000
-  );
 
   logger.info('Scheduled jobs configured successfully');
 }
