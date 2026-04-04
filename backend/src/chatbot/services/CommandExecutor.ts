@@ -5,6 +5,7 @@
 
 import * as appointmentService from '../../services/appointmentService.js';
 import * as patientService from '../../services/patientService.js';
+import * as treatmentService from '../../services/treatmentService.js';
 import type { Intent, ConversationContext } from '../types.js';
 import logger from '../../utils/logger.js';
 
@@ -15,6 +16,7 @@ export interface ExecutionResult {
   statusCode?: number;
   patientId?: string;
   appointmentId?: string;
+  treatmentId?: string;
 }
 
 /**
@@ -167,6 +169,8 @@ export class CommandExecutor {
           return await this.executePatientIntent(intent, context, tenantId);
         case 'session':
           return await this.executeSessionIntent(intent, context, tenantId);
+        case 'treatment':
+          return await this.executeTreatmentIntent(intent, context, tenantId);
         default:
           return {
             success: false,
@@ -838,6 +842,262 @@ export class CommandExecutor {
     }
 
     return { success: true, data: patientData.patient };
+  }
+
+  // ─── Treatment operations ────────────────────────────────────────────────────
+
+  private async executeTreatmentIntent(
+    intent: Intent,
+    context: ConversationContext,
+    tenantId: string
+  ): Promise<ExecutionResult> {
+    switch (intent.operation) {
+      case 'create':
+        return this.createTreatment(intent, context, tenantId);
+      case 'list':
+        return this.listTreatments(tenantId);
+      case 'read':
+      case 'search':
+        return this.getTreatment(intent, context, tenantId);
+      case 'update':
+        return this.updateTreatment(intent, context, tenantId);
+      case 'delete':
+        return this.deleteTreatment(intent, context, tenantId);
+      default:
+        return {
+          success: false,
+          error: 'Operación de tratamiento no soportada',
+          statusCode: 400,
+        };
+    }
+  }
+
+  private async resolveTreatmentName(
+    tenantId: string,
+    name: string
+  ): Promise<treatmentService.TreatmentRow | null | 'ambiguous'> {
+    const all = await treatmentService.list(tenantId);
+    const lower = name.toLowerCase().trim();
+    const matches = all.filter((t) =>
+      t.name.toLowerCase().includes(lower)
+    );
+    if (matches.length === 0) return null;
+    if (matches.length === 1) return matches[0];
+    // Prefer exact match
+    const exact = matches.find(
+      (t) => t.name.toLowerCase() === lower
+    );
+    if (exact) return exact;
+    return 'ambiguous';
+  }
+
+  private async createTreatment(
+    intent: Intent,
+    _context: ConversationContext,
+    tenantId: string
+  ): Promise<ExecutionResult> {
+    const params = intent.params;
+
+    const name = params.name as string | undefined;
+    if (!name) {
+      return { success: false, error: 'MISSING_NAME', statusCode: 400 };
+    }
+
+    // price_cents may come as integer cents (from AI) or as price in pesos (fallback)
+    let priceCents = params.price_cents as number | undefined;
+    if (priceCents === undefined && params.price !== undefined) {
+      priceCents = Math.round(Number(params.price) * 100);
+    }
+    if (priceCents === undefined || isNaN(priceCents) || priceCents < 0) {
+      return { success: false, error: 'MISSING_PRICE', statusCode: 400 };
+    }
+
+    const initialFrequencyWeeks =
+      params.initial_frequency_weeks !== undefined
+        ? Math.round(Number(params.initial_frequency_weeks))
+        : null;
+    const initialSessionsCount =
+      params.initial_sessions_count !== undefined
+        ? Math.round(Number(params.initial_sessions_count))
+        : null;
+    const maintenanceFrequencyWeeks =
+      params.maintenance_frequency_weeks !== undefined
+        ? Math.round(Number(params.maintenance_frequency_weeks))
+        : null;
+    const protocolNotes =
+      (params.protocol_notes as string | null | undefined) ?? null;
+
+    const input: treatmentService.CreateTreatmentInput = {
+      name,
+      price_cents: priceCents,
+      initial_frequency_weeks:
+        initialFrequencyWeeks !== null && initialFrequencyWeeks > 0
+          ? initialFrequencyWeeks
+          : null,
+      initial_sessions_count:
+        initialSessionsCount !== null && initialSessionsCount > 0
+          ? initialSessionsCount
+          : null,
+      maintenance_frequency_weeks:
+        maintenanceFrequencyWeeks !== null && maintenanceFrequencyWeeks > 0
+          ? maintenanceFrequencyWeeks
+          : null,
+      protocol_notes: protocolNotes,
+    };
+
+    const result = await treatmentService.create(tenantId, input);
+    return { success: true, data: result, treatmentId: result.id };
+  }
+
+  private async listTreatments(tenantId: string): Promise<ExecutionResult> {
+    const results = await treatmentService.list(tenantId);
+    return { success: true, data: results };
+  }
+
+  private async getTreatment(
+    intent: Intent,
+    context: ConversationContext,
+    tenantId: string
+  ): Promise<ExecutionResult> {
+    const treatmentId =
+      (intent.params.treatment_id as string | undefined) ??
+      context.lastTreatmentId;
+
+    if (treatmentId) {
+      const result = await treatmentService.getById(tenantId, treatmentId);
+      if (!result) {
+        return { success: false, error: 'NOT_FOUND', statusCode: 404 };
+      }
+      return { success: true, data: result, treatmentId: result.id };
+    }
+
+    const name = intent.params.name as string | undefined;
+    if (!name) {
+      return { success: false, error: 'MISSING_NAME', statusCode: 400 };
+    }
+
+    const resolved = await this.resolveTreatmentName(tenantId, name);
+    if (!resolved) {
+      return { success: false, error: 'NOT_FOUND', statusCode: 404 };
+    }
+    if (resolved === 'ambiguous') {
+      return { success: false, error: 'AMBIGUOUS_TREATMENT', statusCode: 300 };
+    }
+    return { success: true, data: resolved, treatmentId: resolved.id };
+  }
+
+  private async updateTreatment(
+    intent: Intent,
+    context: ConversationContext,
+    tenantId: string
+  ): Promise<ExecutionResult> {
+    const params = intent.params;
+
+    let treatmentId =
+      (params.treatment_id as string | undefined) ?? context.lastTreatmentId;
+
+    if (!treatmentId) {
+      const name = params.name as string | undefined;
+      if (!name) {
+        return { success: false, error: 'MISSING_NAME', statusCode: 400 };
+      }
+      const resolved = await this.resolveTreatmentName(tenantId, name);
+      if (!resolved) {
+        return { success: false, error: 'NOT_FOUND', statusCode: 404 };
+      }
+      if (resolved === 'ambiguous') {
+        return {
+          success: false,
+          error: 'AMBIGUOUS_TREATMENT',
+          statusCode: 300,
+        };
+      }
+      treatmentId = resolved.id;
+    }
+
+    const updateData: treatmentService.UpdateTreatmentInput = {};
+    if (params.name !== undefined) updateData.name = params.name as string;
+
+    let priceCents = params.price_cents as number | undefined;
+    if (priceCents === undefined && params.price !== undefined) {
+      priceCents = Math.round(Number(params.price) * 100);
+    }
+    if (priceCents !== undefined && !isNaN(priceCents) && priceCents >= 0) {
+      updateData.price_cents = priceCents;
+    }
+
+    if (params.initial_frequency_weeks !== undefined) {
+      updateData.initial_frequency_weeks = Math.round(
+        Number(params.initial_frequency_weeks)
+      );
+    }
+    if (params.initial_sessions_count !== undefined) {
+      updateData.initial_sessions_count = Math.round(
+        Number(params.initial_sessions_count)
+      );
+    }
+    if (params.maintenance_frequency_weeks !== undefined) {
+      updateData.maintenance_frequency_weeks = Math.round(
+        Number(params.maintenance_frequency_weeks)
+      );
+    }
+    if (params.protocol_notes !== undefined) {
+      updateData.protocol_notes = params.protocol_notes as string | null;
+    }
+
+    const result = await treatmentService.update(
+      tenantId,
+      treatmentId,
+      updateData
+    );
+    if (!result) {
+      return { success: false, error: 'NOT_FOUND', statusCode: 404 };
+    }
+    return { success: true, data: result, treatmentId: result.id };
+  }
+
+  private async deleteTreatment(
+    intent: Intent,
+    context: ConversationContext,
+    tenantId: string
+  ): Promise<ExecutionResult> {
+    const params = intent.params;
+
+    let treatmentId =
+      (params.treatment_id as string | undefined) ?? context.lastTreatmentId;
+    let treatmentData: treatmentService.TreatmentRow | null = null;
+
+    if (!treatmentId) {
+      const name = params.name as string | undefined;
+      if (!name) {
+        return { success: false, error: 'MISSING_NAME', statusCode: 400 };
+      }
+      const resolved = await this.resolveTreatmentName(tenantId, name);
+      if (!resolved) {
+        return { success: false, error: 'NOT_FOUND', statusCode: 404 };
+      }
+      if (resolved === 'ambiguous') {
+        return {
+          success: false,
+          error: 'AMBIGUOUS_TREATMENT',
+          statusCode: 300,
+        };
+      }
+      treatmentId = resolved.id;
+      treatmentData = resolved;
+    } else {
+      treatmentData = await treatmentService.getById(tenantId, treatmentId);
+      if (!treatmentData) {
+        return { success: false, error: 'NOT_FOUND', statusCode: 404 };
+      }
+    }
+
+    const deleted = await treatmentService.remove(tenantId, treatmentId);
+    if (!deleted) {
+      return { success: false, error: 'NOT_FOUND', statusCode: 404 };
+    }
+
+    return { success: true, data: treatmentData };
   }
 
   // ─── Session operations ─────────────────────────────────────────────────────

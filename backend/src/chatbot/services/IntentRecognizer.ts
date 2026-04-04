@@ -21,6 +21,7 @@ function buildSystemPrompt(): string {
 IMPORTANTE: Solo puedes procesar mensajes relacionados con:
 - Gestión de turnos/citas médicas (crear, listar, actualizar, cancelar)
 - Gestión de pacientes (crear, buscar, actualizar, eliminar)
+- Gestión de tratamientos (crear, listar, ver, actualizar, eliminar)
 - Historial de sesiones clínicas
 - Comandos del sistema: ayuda, reiniciar
 
@@ -30,7 +31,7 @@ Si el mensaje NO está relacionado con estas operaciones (por ejemplo: preguntas
 Para mensajes válidos, devuelve un JSON con:
 {
   "operation": "create|read|update|delete|list|search|help|reset|unknown",
-  "entity": "appointment|patient|session|none",
+  "entity": "appointment|patient|session|treatment|none",
   "params": {
     // Parámetros extraídos del mensaje según la operación:
     // Para citas (appointment):
@@ -40,6 +41,15 @@ Para mensajes válidos, devuelve un JSON con:
     //   first_name, last_name, phone, email, date_of_birth, patient_notes, patient_id, search_query
     // Para sesiones (session):
     //   appointment_id, procedures_performed, recommendations
+    // Para tratamientos (treatment):
+    //   name, price_cents (convertir precio a centavos: $400 → 40000, $1500 → 150000),
+    //   initial_frequency_weeks (frecuencia inicial en semanas enteras: "una vez por mes"→4,
+    //     "cada 2 semanas"→2, "una vez por semana"→1, "cada 3 meses"→13),
+    //   initial_sessions_count (cantidad de sesiones en la fase inicial:
+    //     "durante 3 meses con frecuencia mensual"→3, "durante 6 semanas cada 2 semanas"→3),
+    //   maintenance_frequency_weeks (frecuencia de mantenimiento en semanas enteras:
+    //     "una vez al año"→52, "cada 3 meses"→13, "cada 6 meses"→26),
+    //   protocol_notes, treatment_id
     // Para actualizaciones (update):
     //   field, value
     // Para cancelaciones: status="cancelled"
@@ -65,6 +75,11 @@ Mapeo OBLIGATORIO de operaciones:
 - "reprogramar/mover turno" → operation:"update" + entity:"appointment"
 - "cancelar turno de [Apellido, Nombre]" → operation:"update", entity:"appointment", params:{status:"cancelled", patient_name:"Apellido, Nombre"}
 - "elimina todos los turnos de [fecha]" → operation:"delete", entity:"appointment", params:{date:"YYYY-MM-DD"}
+- "crear/nuevo tratamiento [nombre] con precio $X" → operation:"create", entity:"treatment", params:{name:"...", price_cents:X*100, ...}
+- "listar/mostrar/ver tratamientos" → operation:"list", entity:"treatment"
+- "ver tratamiento [nombre]" → operation:"read", entity:"treatment", params:{name:"..."}
+- "eliminar/borrar tratamiento [nombre]" → operation:"delete", entity:"treatment", params:{name:"..."}
+- "actualizar tratamiento [nombre]" → operation:"update", entity:"treatment", params:{name:"..."}
 
 Solo devuelve el JSON, sin texto adicional.`;
 }
@@ -225,6 +240,45 @@ function patternMatchIntent(text: string): Intent {
     };
   }
 
+  // Create treatment
+  if (
+    /\b(crear|nuevo|agregar|registrar)\b.*\b(tratamiento)\b/.test(lower) ||
+    /\b(tratamiento)\b.*\b(crear|nuevo|agregar|registrar)\b/.test(lower)
+  ) {
+    return {
+      operation: 'create',
+      entity: 'treatment',
+      params: {},
+      confidence: 0.7,
+      rawText,
+    };
+  }
+
+  // List treatments
+  if (
+    /\b(listar|mostrar|ver|cu[aá]les son)\b.*\b(tratamientos)\b/.test(lower) ||
+    /\b(tratamientos)\b/.test(lower)
+  ) {
+    return {
+      operation: 'list',
+      entity: 'treatment',
+      params: {},
+      confidence: 0.7,
+      rawText,
+    };
+  }
+
+  // Delete treatment
+  if (/\b(eliminar|borrar)\b.*\b(tratamiento)\b/.test(lower)) {
+    return {
+      operation: 'delete',
+      entity: 'treatment',
+      params: {},
+      confidence: 0.7,
+      rawText,
+    };
+  }
+
   return {
     operation: 'unknown',
     entity: 'none',
@@ -362,6 +416,7 @@ export class IntentRecognizer {
         'appointment',
         'patient',
         'session',
+        'treatment',
         'none',
       ];
 

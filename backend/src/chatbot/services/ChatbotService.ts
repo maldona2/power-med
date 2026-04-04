@@ -64,6 +64,17 @@ function injectFieldValue(
       return { time: value };
     case 'search_query':
       return { search_query: value };
+    case 'treatment_name_or_id':
+      return { name: value };
+    case 'price_cents': {
+      const numVal = parseFloat(value.replace(/[^0-9.,]/g, '').replace(',', '.'));
+      if (!isNaN(numVal)) {
+        // If the value looks like it's already in cents (very large number), use as-is
+        // Otherwise treat as pesos and convert
+        return { price_cents: numVal >= 100 ? numVal : Math.round(numVal * 100) };
+      }
+      return { price_cents: value };
+    }
     case 'first_name': {
       const parts = value.split(/\s+/);
       return { first_name: parts[0] };
@@ -293,6 +304,7 @@ export class ChatbotService {
     updatedContext = updateContextAfterOperation(updatedContext, {
       patientId: result.patientId,
       appointmentId: result.appointmentId,
+      treatmentId: result.treatmentId,
     });
 
     const response = this.formatSuccessResponse(intent, result.data);
@@ -403,6 +415,29 @@ export class ChatbotService {
       return { response: formatter.errorInvalidDuration(), context };
     }
 
+    // Handle treatment-specific errors
+    if (error === 'AMBIGUOUS_TREATMENT') {
+      return {
+        response:
+          'Encontré varios tratamientos con ese nombre. Por favor, sé más específico.',
+        context,
+      };
+    }
+
+    if (error === 'MISSING_NAME' && intent.entity === 'treatment') {
+      return {
+        response: '¿Cuál es el nombre del tratamiento?',
+        context,
+      };
+    }
+
+    if (error === 'MISSING_PRICE' && intent.entity === 'treatment') {
+      return {
+        response: '¿Cuál es el precio del tratamiento (en pesos)?',
+        context,
+      };
+    }
+
     // Handle not found
     if (error === 'NOT_FOUND' || result.statusCode === 404) {
       return {
@@ -486,6 +521,18 @@ export class ChatbotService {
           })
           .join('\n');
         return `📋 **Historial de sesiones:**\n\n${items}`;
+      }
+      case 'treatment': {
+        const treatment = data as Record<string, unknown>;
+        if (operation === 'create') return formatter.treatmentCreated(treatment);
+        if (operation === 'list' || operation === 'search') {
+          const list = Array.isArray(data) ? data : [];
+          return formatter.treatmentsList(list as Record<string, unknown>[]);
+        }
+        if (operation === 'read') return formatter.treatmentDetail(treatment);
+        if (operation === 'update') return formatter.treatmentUpdated(treatment);
+        if (operation === 'delete') return formatter.treatmentDeleted(treatment);
+        break;
       }
     }
 

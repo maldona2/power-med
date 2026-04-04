@@ -77,6 +77,7 @@ export function updateContextAfterOperation(
   result: {
     patientId?: string;
     appointmentId?: string;
+    treatmentId?: string;
   }
 ): ConversationContext {
   const updated = { ...context };
@@ -93,6 +94,9 @@ export function updateContextAfterOperation(
   }
   if (result.appointmentId) {
     updated.lastAppointmentId = result.appointmentId;
+  }
+  if (result.treatmentId) {
+    updated.lastTreatmentId = result.treatmentId;
   }
 
   return updated;

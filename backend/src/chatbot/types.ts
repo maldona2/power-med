@@ -13,7 +13,12 @@ export type IntentOperation =
   | 'reset'
   | 'unknown';
 
-export type IntentEntity = 'appointment' | 'patient' | 'session' | 'none';
+export type IntentEntity =
+  | 'appointment'
+  | 'patient'
+  | 'session'
+  | 'treatment'
+  | 'none';
 
 export interface Intent {
   operation: IntentOperation;
@@ -44,6 +49,7 @@ export interface PendingDisambiguation {
 export interface ConversationContext {
   lastPatientId?: string;
   lastAppointmentId?: string;
+  lastTreatmentId?: string;
   pendingIntent?: Intent;
   pendingConfirmation?: PendingConfirmation;
   pendingDisambiguation?: PendingDisambiguation;
@@ -75,6 +81,7 @@ export const DESTRUCTIVE_OPERATIONS: Array<{
   { operation: 'delete', entity: 'patient' },
   { operation: 'delete', entity: 'appointment' },
   { operation: 'delete', entity: 'session' },
+  { operation: 'delete', entity: 'treatment' },
   { operation: 'delete', entity: 'none' },
   // Cancel appointment is also destructive
   { operation: 'update', entity: 'appointment' }, // when status=cancelled

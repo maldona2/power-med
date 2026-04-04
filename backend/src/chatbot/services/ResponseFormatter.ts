@@ -25,6 +25,16 @@ interface PatientData {
   date_of_birth?: string | null;
 }
 
+interface TreatmentData {
+  id?: string;
+  name?: string;
+  price_cents?: number;
+  initial_frequency_weeks?: number | null;
+  initial_sessions_count?: number | null;
+  maintenance_frequency_weeks?: number | null;
+  protocol_notes?: string | null;
+}
+
 /**
  * Format a date string in Spanish locale (DD/MM/YYYY HH:MM)
  */
@@ -235,6 +245,79 @@ export class ResponseFormatter {
     return `✅ Paciente **${name}** eliminado correctamente.`;
   }
 
+  // ─── Treatment responses ────────────────────────────────────────────────────
+
+  treatmentCreated(t: TreatmentData): string {
+    const name = t.name ?? 'el tratamiento';
+    const price =
+      t.price_cents !== undefined ? formatCurrencyARS(t.price_cents) : '';
+    const priceStr = price ? ` — Precio: ${price}` : '';
+    return `✅ Tratamiento **${name}** creado correctamente.${priceStr}`;
+  }
+
+  treatmentsList(treatments: TreatmentData[]): string {
+    if (!treatments.length) {
+      return 'No se encontraron tratamientos registrados.';
+    }
+    const items = treatments
+      .slice(0, MAX_LIST_ITEMS)
+      .map((t) => {
+        const price =
+          t.price_cents !== undefined ? formatCurrencyARS(t.price_cents) : '';
+        return `• **${t.name ?? 'Sin nombre'}**${price ? ` — ${price}` : ''}`;
+      })
+      .join('\n');
+    const showing = Math.min(treatments.length, MAX_LIST_ITEMS);
+    const totalCount = treatments.length;
+    const suffix =
+      totalCount > MAX_LIST_ITEMS
+        ? `\n\n_(Mostrando ${showing} de ${totalCount} tratamientos)_`
+        : '';
+    return `💊 **Tratamientos:**\n\n${items}${suffix}`;
+  }
+
+  treatmentDetail(t: TreatmentData): string {
+    const name = t.name ?? 'Sin nombre';
+    const price =
+      t.price_cents !== undefined
+        ? formatCurrencyARS(t.price_cents)
+        : 'No especificado';
+
+    const formatFreq = (weeks: number | null | undefined): string => {
+      if (!weeks) return 'No especificada';
+      if (weeks === 1) return 'Semanal';
+      if (weeks === 2) return 'Quincenal';
+      if (weeks === 4) return 'Mensual';
+      if (weeks === 13) return 'Cada 3 meses';
+      if (weeks === 26) return 'Cada 6 meses';
+      if (weeks === 52) return 'Anual';
+      return `Cada ${weeks} semanas`;
+    };
+
+    const initialPhase =
+      t.initial_frequency_weeks || t.initial_sessions_count
+        ? `${formatFreq(t.initial_frequency_weeks)}${t.initial_sessions_count ? `, ${t.initial_sessions_count} sesiones` : ''}`
+        : 'No especificada';
+
+    const maintenancePhase = t.maintenance_frequency_weeks
+      ? formatFreq(t.maintenance_frequency_weeks)
+      : 'No especificada';
+
+    const notes = t.protocol_notes ?? 'Sin notas';
+
+    return `💊 **Tratamiento: ${name}**\n\n• **Precio:** ${price}\n• **Fase inicial:** ${initialPhase}\n• **Mantenimiento:** ${maintenancePhase}\n• **Notas:** ${notes}`;
+  }
+
+  treatmentUpdated(t: TreatmentData): string {
+    const name = t.name ?? 'el tratamiento';
+    return `✅ Tratamiento **${name}** actualizado correctamente.`;
+  }
+
+  treatmentDeleted(t: TreatmentData): string {
+    const name = t.name ?? 'el tratamiento';
+    return `✅ Tratamiento **${name}** eliminado correctamente.`;
+  }
+
   // ─── Confirmation responses ─────────────────────────────────────────────────
 
   confirmationRequest(action: string, details: string): string {
@@ -332,6 +415,7 @@ export class ResponseFormatter {
       appointment: 'turno',
       patient: 'paciente',
       session: 'sesión',
+      treatment: 'tratamiento',
     };
     const label = entityNames[entity] ?? entity;
     return `❌ No se encontró el ${label} indicado.`;
@@ -389,6 +473,13 @@ Puedo ayudarte con las siguientes operaciones:
 
 **📋 Sesiones:**
 • "Ver historial de sesiones de Ana García"
+
+**💊 Tratamientos:**
+• "Crear tratamiento Fisioterapia con precio $400, una vez por mes durante 3 meses, luego una vez al año"
+• "Listar tratamientos"
+• "Ver tratamiento Fisioterapia"
+• "Actualizar precio del tratamiento Kinesiología a $600"
+• "Eliminar tratamiento Acupuntura"
 
 **Otros:**
 • "Ayuda" — Muestra este mensaje

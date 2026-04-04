@@ -76,6 +76,30 @@ function getRequiredParams(
       }
       break;
     }
+    case 'treatment': {
+      if (operation === 'create') {
+        return [
+          { field: 'name', prompt: '¿Cuál es el nombre del tratamiento?' },
+          {
+            field: 'price_cents',
+            prompt: '¿Cuál es el precio del tratamiento (en pesos)?',
+          },
+        ];
+      }
+      if (
+        operation === 'update' ||
+        operation === 'delete' ||
+        operation === 'read'
+      ) {
+        return [
+          {
+            field: 'treatment_name_or_id',
+            prompt: '¿Cuál es el nombre del tratamiento?',
+          },
+        ];
+      }
+      break;
+    }
   }
   return [];
 }
@@ -126,6 +150,17 @@ export function findMissingParam(
         !!intent.params.patient_name ||
         !!intent.params.first_name;
       if (!hasQuery) return spec;
+    } else if (field === 'treatment_name_or_id') {
+      const hasId =
+        !!intent.params.treatment_id &&
+        intent.params.treatment_id !== '__CONTEXT__';
+      const hasName = !!intent.params.name;
+      const hasContextId = !!context.lastTreatmentId;
+      if (!hasId && !hasName && !hasContextId) return spec;
+    } else if (field === 'price_cents') {
+      const hasPrice =
+        !!intent.params.price_cents || !!intent.params.price;
+      if (!hasPrice) return spec;
     } else {
       if (!intent.params[field]) return spec;
     }
