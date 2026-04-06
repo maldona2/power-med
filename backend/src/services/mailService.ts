@@ -31,12 +31,14 @@ async function send(
   attachments?: EmailAttachment[]
 ): Promise<void> {
   if (!RESEND_API_KEY || !resend) {
-    logger.warn('Resend not configured, skipping email to %s: %s', to, subject);
-    return;
+    const error = 'Resend not configured';
+    logger.warn('%s, skipping email to %s: %s', error, to, subject);
+    throw new Error(error);
   }
   if (!to) {
-    logger.warn('Email send skipped: no recipient address for "%s"', subject);
-    return;
+    const error = 'No recipient address';
+    logger.warn('Email send skipped: %s for "%s"', error, subject);
+    throw new Error(error);
   }
 
   try {
@@ -51,6 +53,7 @@ async function send(
     logger.info('Email sent to %s: %s', to, subject);
   } catch (err) {
     logger.error({ err }, 'Failed to send email to %s: %s', to, subject);
+    throw err;
   }
 }
 
@@ -136,15 +139,15 @@ export function sendAppointmentCancelled(
   void send(to, tpl.subject, tpl.html, tpl.text, attachments);
 }
 
-export function sendAppointmentReminder(
+export async function sendAppointmentReminder(
   to: string,
   data: AppointmentEmailData,
   appointmentId: string
-): void {
+): Promise<void> {
   const tpl = reminderTemplate(data);
   const attachment = generateICSAttachment(appointmentId, to, data, false);
   const attachments = attachment ? [attachment] : undefined;
-  void send(to, tpl.subject, tpl.html, tpl.text, attachments);
+  await send(to, tpl.subject, tpl.html, tpl.text, attachments);
 }
 
 export async function sendVerificationEmail(

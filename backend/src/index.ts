@@ -48,8 +48,15 @@ async function startServer() {
 
 /**
  * Set up all scheduled jobs
+ * Note: If using Railway cron jobs, set DISABLE_IN_APP_CRON=true to avoid duplicate executions
  */
 function setupScheduledJobs() {
+  // Skip in-app cron if disabled (e.g., when using Railway cron jobs)
+  if (process.env.DISABLE_IN_APP_CRON === 'true') {
+    logger.info('In-app cron jobs disabled (using external scheduler)');
+    return;
+  }
+
   // Send 24h appointment reminders (configurable via env, default: daily at 09:00)
   const reminderCronSchedule =
     process.env.REMINDER_CRON_SCHEDULE ?? '0 9 * * *';

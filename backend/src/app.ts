@@ -65,6 +65,7 @@ import debtDashboardRoutes from './routes/debtDashboard.js';
 import remindersRoutes from './routes/reminders.js';
 import chatbotRoutes from './chatbot/routes.js';
 import whatsappRoutes from './whatsapp/routes.js';
+import debugRoutes from './routes/debug.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -84,6 +85,11 @@ app.use('/api/debt-dashboard', debtDashboardRoutes);
 app.use('/api/reminders', remindersRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+
+// Debug routes (only in development)
+if (process.env.NODE_ENV === 'development') {
+  app.use('/api/debug', debugRoutes);
+}
 
 // Error handler (must be last)
 app.use(errorHandler);
