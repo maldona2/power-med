@@ -91,6 +91,7 @@ export async function sendReminders(): Promise<void> {
       .select({
         tenantId: users.tenantId,
         fullName: users.fullName,
+        address: users.address,
         subscriptionPlan: users.subscriptionPlan,
         subscriptionStatus: users.subscriptionStatus,
       })
@@ -145,6 +146,7 @@ export async function sendReminders(): Promise<void> {
             professionalName,
             scheduledAt: row.scheduledAt ?? new Date(),
             durationMinutes: row.durationMinutes ?? 60,
+            address: prof?.address ?? null,
           };
 
           let retryCount = 0;

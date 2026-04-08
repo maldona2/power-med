@@ -3,6 +3,7 @@ export interface AppointmentEmailData {
   professionalName: string;
   scheduledAt: Date;
   durationMinutes: number;
+  address?: string | null;
   notes?: string | null;
   unsubscribeUrl?: string | null;
 }
@@ -71,13 +72,14 @@ export function bookedTemplate(data: AppointmentEmailData): {
          <p><strong>${dateStr}</strong></p>
          <p class="label">Duración</p>
          <p>${data.durationMinutes} minutos</p>
+         ${data.address ? `<p class="label">Dirección</p><p>${data.address}</p>` : ''}
          ${data.notes ? `<p class="label">Notas</p><p>${data.notes}</p>` : ''}
        </div>
        <p>Si necesitás cancelar o reprogramar, ponete en contacto a la brevedad.</p>
      </div>`
   );
 
-  const text = `Turno agendado con ${data.professionalName}\n\nFecha: ${dateStr}\nDuración: ${data.durationMinutes} min\n${data.notes ? `Notas: ${data.notes}\n` : ''}`;
+  const text = `Turno agendado con ${data.professionalName}\n\nFecha: ${dateStr}\nDuración: ${data.durationMinutes} min\n${data.address ? `Dirección: ${data.address}\n` : ''}${data.notes ? `Notas: ${data.notes}\n` : ''}`;
 
   return { subject, html, text };
 }
@@ -103,12 +105,13 @@ export function confirmedTemplate(data: AppointmentEmailData): {
          <p><strong>${dateStr}</strong></p>
          <p class="label">Duración</p>
          <p>${data.durationMinutes} minutos</p>
+         ${data.address ? `<p class="label">Dirección</p><p>${data.address}</p>` : ''}
        </div>
        <p>Te esperamos. ¡Hasta pronto!</p>
      </div>`
   );
 
-  const text = `Tu turno con ${data.professionalName} está confirmado.\n\nFecha: ${dateStr}\nDuración: ${data.durationMinutes} min`;
+  const text = `Tu turno con ${data.professionalName} está confirmado.\n\nFecha: ${dateStr}\nDuración: ${data.durationMinutes} min\n${data.address ? `Dirección: ${data.address}\n` : ''}`;
 
   return { subject, html, text };
 }
@@ -166,13 +169,14 @@ export function reminderTemplate(data: AppointmentEmailData): {
          <p><strong>${dateStr}</strong></p>
          <p class="label">Duración</p>
          <p>${data.durationMinutes} minutos</p>
+         ${data.address ? `<p class="label">Dirección</p><p>${data.address}</p>` : ''}
        </div>
        <p>Si no podés asistir, avisanos lo antes posible.</p>
        ${unsubscribeHtml}
      </div>`
   );
 
-  const text = `Recordatorio: turno mañana con ${data.professionalName}.\n\nFecha: ${dateStr}\nDuración: ${data.durationMinutes} min${unsubscribeText}`;
+  const text = `Recordatorio: turno mañana con ${data.professionalName}.\n\nFecha: ${dateStr}\nDuración: ${data.durationMinutes} min\n${data.address ? `Dirección: ${data.address}\n` : ''}${unsubscribeText}`;
 
   return { subject, html, text };
 }

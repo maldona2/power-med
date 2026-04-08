@@ -444,7 +444,7 @@ async function getEmailContext(
     .limit(1);
 
   const [professional] = await db
-    .select({ fullName: users.fullName })
+    .select({ fullName: users.fullName, address: users.address })
     .from(users)
     .where(eq(users.tenantId, tenantId))
     .limit(1);
@@ -456,6 +456,7 @@ async function getEmailContext(
       ? `${patient.firstName} ${patient.lastName}`
       : 'Paciente',
     professionalName: professional?.fullName ?? 'El profesional',
+    address: professional?.address ?? null,
     scheduledAt: scheduledAt ?? new Date(),
     durationMinutes: durationMinutes ?? 60,
   };
@@ -544,6 +545,7 @@ export async function create(
       professionalName: ctx.professionalName,
       scheduledAt: ctx.scheduledAt,
       durationMinutes: ctx.durationMinutes,
+      address: ctx.address,
       notes: input.notes ?? null,
     };
     if (ctx.patientEmail) {
@@ -663,6 +665,7 @@ export async function update(
         professionalName: ctx.professionalName,
         scheduledAt: ctx.scheduledAt,
         durationMinutes: ctx.durationMinutes,
+        address: ctx.address,
       };
       if (ctx.patientEmail) {
         if (data.status === 'confirmed') {
