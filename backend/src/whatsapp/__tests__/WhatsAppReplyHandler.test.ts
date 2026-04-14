@@ -20,6 +20,7 @@ jest.mock('../../db/client.js', () => ({
     patientId: 'appointments.patientId',
     status: 'appointments.status',
     scheduledAt: 'appointments.scheduledAt',
+    durationMinutes: 'appointments.durationMinutes',
   },
   patients: {
     id: 'patients.id',
@@ -31,6 +32,7 @@ jest.mock('../../db/client.js', () => ({
     id: 'users.id',
     tenantId: 'users.tenantId',
     fullName: 'users.fullName',
+    phone: 'users.phone',
   },
 }));
 
@@ -55,11 +57,16 @@ jest.mock('drizzle-orm', () => ({
 import { WhatsAppReplyHandler } from '../services/WhatsAppReplyHandler.js';
 import type { MetaAPIClient } from '../services/MetaAPIClient.js';
 
-function makeClient(): jest.Mocked<Pick<MetaAPIClient, 'sendTextMessage'>> {
+function makeClient(): jest.Mocked<
+  Pick<MetaAPIClient, 'sendTextMessage' | 'sendTemplateMessage'>
+> {
   return {
     sendTextMessage: jest
       .fn()
       .mockResolvedValue({ success: true, messageId: 'mid-1' }),
+    sendTemplateMessage: jest
+      .fn()
+      .mockResolvedValue({ success: true, messageId: 'mid-2' }),
   };
 }
 
@@ -78,6 +85,12 @@ function setupDbChain(results: unknown[]) {
   return chain;
 }
 
+const APPT = {
+  id: 'appt-1',
+  scheduledAt: new Date('2026-04-20T13:00:00Z'),
+  durationMinutes: 30,
+};
+
 describe('WhatsAppReplyHandler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -89,9 +102,9 @@ describe('WhatsAppReplyHandler', () => {
 
   it('confirms appointment on SI reply', async () => {
     setupDbChain([
-      [{ id: 'patient-1', firstName: 'María' }], // patient lookup
-      [{ id: 'appt-1' }], // appointment lookup
-      [{ fullName: 'Dr. Juan Pérez' }], // professional lookup
+      [{ id: 'patient-1', firstName: 'María', tenantId: 'tenant-1' }], // patient lookup
+      [APPT], // appointment lookup
+      [{ fullName: 'Dr. Juan Pérez', phone: '5491100000000' }], // professional lookup
     ]);
     const client = makeClient();
     const handler = new WhatsAppReplyHandler(
@@ -102,16 +115,19 @@ describe('WhatsAppReplyHandler', () => {
     expect(mockUpdateAppointment).toHaveBeenCalledWith('tenant-1', 'appt-1', {
       status: 'confirmed',
     });
+    // Patient reply via sendTextMessage
     expect(client.sendTextMessage).toHaveBeenCalledTimes(1);
     const [, text] = (client.sendTextMessage as jest.Mock).mock.calls[0]!;
     expect(text).toContain('confirmado');
+    // Doctor notification via sendTemplateMessage
+    expect(client.sendTemplateMessage).toHaveBeenCalledTimes(1);
   });
 
   it('cancels appointment on CANCELAR reply', async () => {
     setupDbChain([
-      [{ id: 'patient-1', firstName: 'María' }],
-      [{ id: 'appt-1' }],
-      [{ fullName: 'Dr. Juan Pérez' }],
+      [{ id: 'patient-1', firstName: 'María', tenantId: 'tenant-1' }],
+      [APPT],
+      [{ fullName: 'Dr. Juan Pérez', phone: '5491100000000' }],
     ]);
     const client = makeClient();
     const handler = new WhatsAppReplyHandler(
@@ -122,15 +138,18 @@ describe('WhatsAppReplyHandler', () => {
     expect(mockUpdateAppointment).toHaveBeenCalledWith('tenant-1', 'appt-1', {
       status: 'cancelled',
     });
+    // Only 1 message: no doctor notification on cancel
+    expect(client.sendTextMessage).toHaveBeenCalledTimes(1);
+    expect(client.sendTemplateMessage).not.toHaveBeenCalled();
     const [, text] = (client.sendTextMessage as jest.Mock).mock.calls[0]!;
     expect(text).toContain('cancelado');
   });
 
   it('accepts CONFIRMAR as synonym for SI', async () => {
     setupDbChain([
-      [{ id: 'patient-1', firstName: 'María' }],
-      [{ id: 'appt-1' }],
-      [{ fullName: 'Dr. Juan' }],
+      [{ id: 'patient-1', firstName: 'María', tenantId: 'tenant-1' }],
+      [APPT],
+      [{ fullName: 'Dr. Juan', phone: null }],
     ]);
     const client = makeClient();
     const handler = new WhatsAppReplyHandler(
@@ -144,9 +163,9 @@ describe('WhatsAppReplyHandler', () => {
 
   it('accepts NO as synonym for CANCELAR', async () => {
     setupDbChain([
-      [{ id: 'patient-1', firstName: 'María' }],
-      [{ id: 'appt-1' }],
-      [{ fullName: 'Dr. Juan' }],
+      [{ id: 'patient-1', firstName: 'María', tenantId: 'tenant-1' }],
+      [APPT],
+      [{ fullName: 'Dr. Juan', phone: null }],
     ]);
     const client = makeClient();
     const handler = new WhatsAppReplyHandler(
@@ -183,7 +202,7 @@ describe('WhatsAppReplyHandler', () => {
 
   it('does nothing when no pending appointment is found', async () => {
     setupDbChain([
-      [{ id: 'patient-1', firstName: 'María' }],
+      [{ id: 'patient-1', firstName: 'María', tenantId: 'tenant-1' }],
       [], // no pending appointment
     ]);
     const client = makeClient();
@@ -196,9 +215,9 @@ describe('WhatsAppReplyHandler', () => {
 
   it('does not throw when updateAppointment fails', async () => {
     setupDbChain([
-      [{ id: 'patient-1', firstName: 'María' }],
-      [{ id: 'appt-1' }],
-      [{ fullName: 'Dr. Juan' }],
+      [{ id: 'patient-1', firstName: 'María', tenantId: 'tenant-1' }],
+      [APPT],
+      [{ fullName: 'Dr. Juan', phone: null }],
     ]);
     mockUpdateAppointment.mockRejectedValue(new Error('DB error'));
     const client = makeClient();
@@ -209,5 +228,47 @@ describe('WhatsAppReplyHandler', () => {
       handler.handle('tenant-1', '5491112345678', 'SI')
     ).resolves.not.toThrow();
     expect(client.sendTextMessage).not.toHaveBeenCalled();
+  });
+
+  it('notifies doctor when patient replies SI', async () => {
+    const doctorPhone = '5491199990000';
+    setupDbChain([
+      [{ id: 'patient-1', firstName: 'María', tenantId: 'tenant-1' }],
+      [APPT],
+      [{ fullName: 'Dr. Juan Pérez', phone: doctorPhone }],
+    ]);
+    const client = makeClient();
+    const handler = new WhatsAppReplyHandler(
+      client as unknown as MetaAPIClient
+    );
+    await handler.handle('tenant-1', '5491112345678', 'SI');
+
+    // Patient reply goes via sendTextMessage
+    expect(client.sendTextMessage).toHaveBeenCalledTimes(1);
+    // Doctor notification goes via sendTemplateMessage
+    expect(client.sendTemplateMessage).toHaveBeenCalledTimes(1);
+    const [callPhone, templateName, , bodyParams] = (
+      client.sendTemplateMessage as jest.Mock
+    ).mock.calls[0]!;
+    expect(callPhone).toBe(doctorPhone);
+    expect(templateName).toBe('turno_confirmado_doctor');
+    expect(bodyParams[0]).toBe('María'); // patient name as first param
+  });
+
+  it('skips doctor notification if professional has no phone', async () => {
+    setupDbChain([
+      [{ id: 'patient-1', firstName: 'María', tenantId: 'tenant-1' }],
+      [APPT],
+      [{ fullName: 'Dr. Juan Pérez', phone: null }],
+    ]);
+    const client = makeClient();
+    const handler = new WhatsAppReplyHandler(
+      client as unknown as MetaAPIClient
+    );
+    await handler.handle('tenant-1', '5491112345678', 'SI');
+
+    // Only sendTextMessage for patient; no doctor template notification
+    expect(client.sendTextMessage).toHaveBeenCalledTimes(1);
+    expect(client.sendTemplateMessage).not.toHaveBeenCalled();
   });
 });

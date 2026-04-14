@@ -13,7 +13,11 @@ import { and, desc, eq, or } from 'drizzle-orm';
 import { db, appointments, patients, users } from '../../db/client.js';
 import { update as updateAppointment } from '../../services/appointmentService.js';
 import { MetaAPIClient } from './MetaAPIClient.js';
-import { replyConfirmedMessage, replyCancelledMessage } from '../templates.js';
+import {
+  replyConfirmedMessage,
+  replyCancelledMessage,
+  doctorAppointmentConfirmedTemplate,
+} from '../templates.js';
 import logger from '../../utils/logger.js';
 
 type ReplyAction = 'confirm' | 'cancel' | 'ignore';
@@ -79,7 +83,11 @@ export class WhatsAppReplyHandler {
 
     // Find most recent pending appointment for this patient
     const [appointment] = await db
-      .select({ id: appointments.id })
+      .select({
+        id: appointments.id,
+        scheduledAt: appointments.scheduledAt,
+        durationMinutes: appointments.durationMinutes,
+      })
       .from(appointments)
       .where(
         and(
@@ -99,9 +107,9 @@ export class WhatsAppReplyHandler {
       return;
     }
 
-    // Fetch professional name for the reply message
+    // Fetch professional name and phone for the reply + doctor notification
     const [professional] = await db
-      .select({ fullName: users.fullName })
+      .select({ fullName: users.fullName, phone: users.phone })
       .from(users)
       .where(eq(users.tenantId, tenantId))
       .limit(1);
@@ -132,6 +140,27 @@ export class WhatsAppReplyHandler {
         { fromPhone, error: result.error },
         'WhatsAppReplyHandler: failed to send reply'
       );
+    }
+
+    // Notify doctor when patient confirms
+    if (action === 'confirm' && professional?.phone) {
+      const tmpl = doctorAppointmentConfirmedTemplate(
+        patient.firstName,
+        appointment.scheduledAt,
+        appointment.durationMinutes ?? 30
+      );
+      const doctorResult = await this.client.sendTemplateMessage(
+        professional.phone,
+        tmpl.templateName,
+        tmpl.languageCode,
+        tmpl.bodyParameters
+      );
+      if (!doctorResult.success) {
+        logger.warn(
+          { phone: professional.phone, error: doctorResult.error },
+          'WhatsAppReplyHandler: failed to notify doctor'
+        );
+      }
     }
   }
 }

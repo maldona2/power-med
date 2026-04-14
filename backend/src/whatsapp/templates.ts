@@ -196,3 +196,23 @@ export function replyCancelledMessage(professionalName: string): string {
     `Comunícate con el consultorio para reprogramar.`
   );
 }
+
+// turno_confirmado_doctor (3 params):
+//   El/La paciente {{1}} confirmó su turno.
+//   Fecha y hora: {{2}}
+//   Duración: {{3}} min
+export function doctorAppointmentConfirmedTemplate(
+  patientName: string,
+  scheduledAt: Date,
+  durationMinutes: number
+): WhatsAppTemplateMessage {
+  return {
+    templateName: 'turno_confirmado_doctor',
+    languageCode: 'es_AR',
+    bodyParameters: [
+      patientName,
+      formatDate(scheduledAt),
+      String(durationMinutes),
+    ],
+  };
+}
