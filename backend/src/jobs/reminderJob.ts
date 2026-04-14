@@ -45,8 +45,34 @@ async function sendWithRetry(
 export async function sendReminders(): Promise<void> {
   const startTime = Date.now();
   const now = new Date();
-  const windowStart = new Date(now.getTime() + 23 * 60 * 60 * 1000);
-  const windowEnd = new Date(now.getTime() + 25 * 60 * 60 * 1000);
+  // Send reminders for all appointments on the next calendar day (UTC).
+  // Using a date-based window ensures every appointment scheduled tomorrow
+  // receives a reminder regardless of what time the cron runs today, and
+  // the hasReminderBeenSent check prevents duplicates when the job runs hourly.
+  const tomorrow = new Date(now);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  const windowStart = new Date(
+    Date.UTC(
+      tomorrow.getUTCFullYear(),
+      tomorrow.getUTCMonth(),
+      tomorrow.getUTCDate(),
+      0,
+      0,
+      0,
+      0
+    )
+  );
+  const windowEnd = new Date(
+    Date.UTC(
+      tomorrow.getUTCFullYear(),
+      tomorrow.getUTCMonth(),
+      tomorrow.getUTCDate(),
+      23,
+      59,
+      59,
+      999
+    )
+  );
 
   logger.info(
     'Running reminder job for appointments between %s and %s',
