@@ -11,8 +11,39 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { Patient } from '@/types';
 import type { PatientFormData } from '@/hooks/usePatients';
+
+const COUNTRY_CODES = [
+  { code: '54', dialCode: '+54' },
+  { code: '55', dialCode: '+55' },
+  { code: '56', dialCode: '+56' },
+  { code: '57', dialCode: '+57' },
+  { code: '52', dialCode: '+52' },
+  { code: '51', dialCode: '+51' },
+  { code: '598', dialCode: '+598' },
+  { code: '58', dialCode: '+58' },
+  { code: '1', dialCode: '+1' },
+  { code: '34', dialCode: '+34' },
+];
+
+function splitPhone(stored: string): { countryCode: string; local: string } {
+  const digits = stored.replace(/\D/g, '');
+  const sorted = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length);
+  for (const cc of sorted) {
+    if (digits.startsWith(cc.code)) {
+      return { countryCode: cc.code, local: digits.slice(cc.code.length) };
+    }
+  }
+  return { countryCode: '54', local: digits };
+}
 
 interface PatientFormDialogProps {
   open: boolean;
@@ -37,19 +68,24 @@ export function PatientFormDialog({
   onSubmit,
 }: PatientFormDialogProps) {
   const [form, setFormState] = useState(emptyForm);
+  const [countryCode, setCountryCode] = useState('54');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (patient) {
+      const stored = patient.phone ?? '';
+      const { countryCode: cc, local } = stored ? splitPhone(stored) : { countryCode: '54', local: '' };
+      setCountryCode(cc);
       setFormState({
         first_name: patient.first_name,
         last_name: patient.last_name,
-        phone: patient.phone ?? '',
+        phone: local,
         email: patient.email ?? '',
         date_of_birth: patient.date_of_birth ?? '',
         notes: patient.notes ?? '',
       });
     } else {
+      setCountryCode('54');
       setFormState(emptyForm);
     }
   }, [patient, open]);
@@ -58,7 +94,10 @@ export function PatientFormDialog({
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onSubmit(form);
+      const formattedPhone = form.phone.trim()
+        ? `${countryCode}${form.phone.replace(/\D/g, '')}`
+        : '';
+      await onSubmit({ ...form, phone: formattedPhone });
       onOpenChange(false);
     } finally {
       setSubmitting(false);
@@ -116,14 +155,30 @@ export function PatientFormDialog({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="phone">Teléfono</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={form.phone}
-                  onChange={(e) =>
-                    setFormState((f) => ({ ...f, phone: e.target.value }))
-                  }
-                />
+                <div className="flex gap-2">
+                  <Select value={countryCode} onValueChange={setCountryCode}>
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRY_CODES.map((cc) => (
+                        <SelectItem key={cc.code} value={cc.code}>
+                          {cc.dialCode}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) =>
+                      setFormState((f) => ({ ...f, phone: e.target.value }))
+                    }
+                    placeholder="3813000120"
+                    className="flex-1"
+                  />
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>

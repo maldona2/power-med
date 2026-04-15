@@ -99,6 +99,30 @@ const DEFAULT_WORKING_HOURS = {
   days: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
 };
 
+const COUNTRY_CODES = [
+  { code: '54', dialCode: '+54' },
+  { code: '55', dialCode: '+55' },
+  { code: '56', dialCode: '+56' },
+  { code: '57', dialCode: '+57' },
+  { code: '52', dialCode: '+52' },
+  { code: '51', dialCode: '+51' },
+  { code: '598', dialCode: '+598' },
+  { code: '58', dialCode: '+58' },
+  { code: '1', dialCode: '+1' },
+  { code: '34', dialCode: '+34' },
+];
+
+function splitPhone(stored: string): { countryCode: string; local: string } {
+  const digits = stored.replace(/\D/g, '');
+  const sorted = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length);
+  for (const cc of sorted) {
+    if (digits.startsWith(cc.code)) {
+      return { countryCode: cc.code, local: digits.slice(cc.code.length) };
+    }
+  }
+  return { countryCode: '54', local: digits };
+}
+
 function userToDoctor(user: {
   email: string;
   fullName: string | null;
@@ -166,9 +190,14 @@ export function ProfilePage() {
     pauseSubscription,
     resumeSubscription,
   } = useSubscription();
-  const [doctor, setDoctor] = useState<ProfileDoctor>(() =>
-    user ? userToDoctor(user) : userToDoctor({ email: '', fullName: null })
-  );
+  const [doctor, setDoctor] = useState<ProfileDoctor>(() => {
+    const d = user ? userToDoctor(user) : userToDoctor({ email: '', fullName: null });
+    return d;
+  });
+  const [phoneCountryCode, setPhoneCountryCode] = useState(() => {
+    const stored = user?.phone ?? '';
+    return stored ? splitPhone(stored).countryCode : '54';
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [treatmentDialogOpen, setTreatmentDialogOpen] = useState(false);
@@ -186,7 +215,16 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      setDoctor(userToDoctor(user));
+      const stored = user.phone ?? '';
+      if (stored) {
+        const { countryCode, local } = splitPhone(stored);
+        setPhoneCountryCode(countryCode);
+        const d = userToDoctor(user);
+        d.phone = local;
+        setDoctor(d);
+      } else {
+        setDoctor(userToDoctor(user));
+      }
     }
   }, [user]);
 
@@ -196,7 +234,9 @@ export function ProfilePage() {
       await updateProfile({
         fullName: fullName || undefined,
         email: doctor.email,
-        phone: doctor.phone || null,
+        phone: doctor.phone.trim()
+          ? `${phoneCountryCode}${doctor.phone.replace(/\D/g, '')}`
+          : null,
         specialty: doctor.specialty || null,
         licenseNumber: doctor.licenseNumber || null,
         address: doctor.address || null,
@@ -465,18 +505,35 @@ export function ProfilePage() {
                 <div className="space-y-2">
                   <Label htmlFor="phone">Teléfono</Label>
                   {isEditing ? (
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={doctor.phone}
-                      onChange={(e) =>
-                        setDoctor({ ...doctor, phone: e.target.value })
-                      }
-                      className="h-11"
-                    />
+                    <div className="flex gap-2">
+                      <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
+                        <SelectTrigger className="w-[100px] h-11">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRY_CODES.map((cc) => (
+                            <SelectItem key={cc.code} value={cc.code}>
+                              {cc.dialCode}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={doctor.phone}
+                        onChange={(e) =>
+                          setDoctor({ ...doctor, phone: e.target.value })
+                        }
+                        placeholder="3813000120"
+                        className="h-11 flex-1"
+                      />
+                    </div>
                   ) : (
                     <div className="flex h-11 items-center rounded-lg border bg-muted/30 px-3">
-                      <span className="text-sm">{doctor.phone || '—'}</span>
+                      <span className="text-sm">
+                        {doctor.phone ? `+${phoneCountryCode} ${doctor.phone}` : '—'}
+                      </span>
                     </div>
                   )}
                 </div>
