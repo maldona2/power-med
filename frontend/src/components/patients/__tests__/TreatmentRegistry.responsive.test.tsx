@@ -166,11 +166,9 @@ describe('Treatment Registry Components - Responsive Design', () => {
         </BrowserRouter>
       );
 
-      // Check for ScrollArea component (rendered as div with specific attributes)
-      const scrollArea = container.querySelector(
-        '[data-radix-scroll-area-viewport]'
-      );
-      expect(scrollArea).toBeInTheDocument();
+      // Check for overflow-x-auto container for horizontal scrolling
+      const scrollContainer = container.querySelector('.overflow-x-auto');
+      expect(scrollContainer).toBeInTheDocument();
     });
 
     it('should have minimum width for timeline content to enable scrolling', () => {

@@ -64,8 +64,8 @@ describe('TreatmentTimeline', () => {
       <TreatmentTimeline treatments={mockTreatments} />
     );
 
-    // Check that timeline axis is rendered
-    const timelineAxis = container.querySelector('.relative.h-24');
+    // Check that timeline axis is rendered (h-32 to accommodate tooltips)
+    const timelineAxis = container.querySelector('.relative.h-32');
     expect(timelineAxis).toBeInTheDocument();
 
     // Check that horizontal line is rendered
@@ -156,11 +156,9 @@ describe('TreatmentTimeline', () => {
       <TreatmentTimeline treatments={mockTreatments} />
     );
 
-    // Check that ScrollArea is used
-    const scrollArea = container.querySelector(
-      '[data-radix-scroll-area-viewport]'
-    );
-    expect(scrollArea).toBeInTheDocument();
+    // Check that overflow-x-auto container is used for horizontal scrolling
+    const scrollContainer = container.querySelector('.overflow-x-auto');
+    expect(scrollContainer).toBeInTheDocument();
 
     // Check that content has minimum width for scrolling
     const timelineContent = container.querySelector('.min-w-\\[600px\\]');
