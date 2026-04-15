@@ -6,6 +6,7 @@ import {
   sessions,
   appointmentTreatments,
   treatments,
+  patientTreatments,
 } from '../db/client.js';
 import * as medicalHistoryService from './medicalHistoryService.js';
 
@@ -385,4 +386,163 @@ export async function remove(tenantId: string, id: string): Promise<boolean> {
     .where(and(eq(patients.id, id), eq(patients.tenantId, tenantId)));
 
   return (result.rowCount ?? 0) > 0;
+}
+
+// ─── Treatment History ───────────────────────────────────────────────────────
+
+export interface TreatmentApplication {
+  id: string;
+  appointment_id: string;
+  appointment_date: string;
+  quantity: number;
+}
+
+export interface TreatmentProtocol {
+  initial_sessions_count: number | null;
+  initial_frequency_weeks: number | null;
+  maintenance_frequency_weeks: number | null;
+  protocol_notes: string | null;
+}
+
+export interface TreatmentHistoryItem {
+  treatment_id: string;
+  treatment_name: string;
+  total_sessions: number;
+  first_application_date: string;
+  last_application_date: string;
+  status: 'active' | 'completed' | null;
+  current_session: number | null;
+  protocol: TreatmentProtocol | null;
+  applications: TreatmentApplication[];
+}
+
+export interface TreatmentHistoryResponse {
+  treatments: TreatmentHistoryItem[];
+}
+
+export async function getTreatmentHistory(
+  tenantId: string,
+  patientId: string
+): Promise<TreatmentHistoryResponse> {
+  // Validate patient belongs to tenant
+  const [patient] = await db
+    .select({ id: patients.id })
+    .from(patients)
+    .where(and(eq(patients.id, patientId), eq(patients.tenantId, tenantId)))
+    .limit(1);
+
+  if (!patient) {
+    const err = new Error('Patient not found');
+    (err as Error & { statusCode?: number }).statusCode = 404;
+    throw err;
+  }
+
+  // Fetch all treatment applications for the patient
+  const applications = await db
+    .select({
+      appointmentTreatmentId: appointmentTreatments.id,
+      appointmentId: appointmentTreatments.appointmentId,
+      treatmentId: appointmentTreatments.treatmentId,
+      treatmentName: treatments.name,
+      quantity: appointmentTreatments.quantity,
+      appointmentDate: appointments.scheduledAt,
+      initialSessionsCount: treatments.initialSessionsCount,
+      initialFrequencyWeeks: treatments.initialFrequencyWeeks,
+      maintenanceFrequencyWeeks: treatments.maintenanceFrequencyWeeks,
+      protocolNotes: treatments.protocolNotes,
+    })
+    .from(appointmentTreatments)
+    .innerJoin(treatments, eq(treatments.id, appointmentTreatments.treatmentId))
+    .innerJoin(
+      appointments,
+      eq(appointments.id, appointmentTreatments.appointmentId)
+    )
+    .where(
+      and(
+        eq(appointments.patientId, patientId),
+        eq(appointments.tenantId, tenantId)
+      )
+    )
+    .orderBy(desc(appointments.scheduledAt));
+
+  // Fetch patient treatment status records
+  const patientTreatmentRecords = await db
+    .select()
+    .from(patientTreatments)
+    .where(
+      and(
+        eq(patientTreatments.patientId, patientId),
+        eq(patientTreatments.tenantId, tenantId)
+      )
+    );
+
+  // Create a map for quick lookup of patient treatment status
+  const statusMap = new Map<string, typeof patientTreatments.$inferSelect>();
+  for (const record of patientTreatmentRecords) {
+    statusMap.set(record.treatmentId, record);
+  }
+
+  // Aggregate applications by treatment
+  const treatmentMap = new Map<string, TreatmentHistoryItem>();
+  for (const app of applications) {
+    if (!treatmentMap.has(app.treatmentId)) {
+      const statusRecord = statusMap.get(app.treatmentId);
+      let status: 'active' | 'completed' | null = null;
+      if (statusRecord) {
+        if (statusRecord.isActive) {
+          status = 'active';
+        } else if (statusRecord.completedAt) {
+          status = 'completed';
+        }
+      }
+
+      treatmentMap.set(app.treatmentId, {
+        treatment_id: app.treatmentId,
+        treatment_name: app.treatmentName,
+        total_sessions: 0,
+        first_application_date: app.appointmentDate.toISOString(),
+        last_application_date: app.appointmentDate.toISOString(),
+        status,
+        current_session: statusRecord?.currentSession ?? null,
+        protocol: {
+          initial_sessions_count: app.initialSessionsCount,
+          initial_frequency_weeks: app.initialFrequencyWeeks,
+          maintenance_frequency_weeks: app.maintenanceFrequencyWeeks,
+          protocol_notes: app.protocolNotes,
+        },
+        applications: [],
+      });
+    }
+
+    const treatment = treatmentMap.get(app.treatmentId)!;
+    treatment.total_sessions += app.quantity;
+    treatment.applications.push({
+      id: app.appointmentTreatmentId,
+      appointment_id: app.appointmentId,
+      appointment_date: app.appointmentDate.toISOString(),
+      quantity: app.quantity,
+    });
+
+    // Update first and last application dates
+    const currentDate = new Date(app.appointmentDate);
+    const firstDate = new Date(treatment.first_application_date);
+    const lastDate = new Date(treatment.last_application_date);
+
+    if (currentDate < firstDate) {
+      treatment.first_application_date = app.appointmentDate.toISOString();
+    }
+    if (currentDate > lastDate) {
+      treatment.last_application_date = app.appointmentDate.toISOString();
+    }
+  }
+
+  // Convert map to array and sort by first application date (most recent first)
+  const treatmentsList = Array.from(treatmentMap.values()).sort((a, b) => {
+    return (
+      new Date(b.first_application_date).getTime() -
+      new Date(a.first_application_date).getTime()
+    );
+  });
+
+  return { treatments: treatmentsList };
 }

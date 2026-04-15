@@ -128,6 +128,23 @@ router.get(
 );
 
 router.get(
+  '/:id/treatment-history',
+  professionalOnly,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const tenantId = getTenantId(req);
+      const result = await patientService.getTreatmentHistory(
+        tenantId,
+        req.params.id
+      );
+      res.json(result);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.get(
   '/:id',
   professionalOnly,
   async (req: Request, res: Response, next: NextFunction) => {

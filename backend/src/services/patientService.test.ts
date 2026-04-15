@@ -10,9 +10,242 @@ jest.mock('../db/client.js', () => ({
   patients: {},
   appointments: {},
   sessions: {},
+  appointmentTreatments: {},
+  treatments: {},
+  patientTreatments: {},
 }));
 
 jest.mock('./medicalHistoryService.js');
+
+describe('patientService.getTreatmentHistory', () => {
+  const mockTenantId = 'tenant-123';
+  const mockPatientId = 'patient-456';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should return treatment history with aggregated data', async () => {
+    const mockPatient = {
+      id: mockPatientId,
+      tenantId: mockTenantId,
+    };
+
+    const mockApplications = [
+      {
+        appointmentTreatmentId: 'app-treat-1',
+        appointmentId: 'appt-1',
+        treatmentId: 'treatment-1',
+        treatmentName: 'Botox',
+        quantity: 2,
+        appointmentDate: new Date('2024-01-15'),
+        initialSessionsCount: 3,
+        initialFrequencyWeeks: 4,
+        maintenanceFrequencyWeeks: 12,
+        protocolNotes: 'Apply to forehead',
+      },
+      {
+        appointmentTreatmentId: 'app-treat-2',
+        appointmentId: 'appt-2',
+        treatmentId: 'treatment-1',
+        treatmentName: 'Botox',
+        quantity: 1,
+        appointmentDate: new Date('2024-02-15'),
+        initialSessionsCount: 3,
+        initialFrequencyWeeks: 4,
+        maintenanceFrequencyWeeks: 12,
+        protocolNotes: 'Apply to forehead',
+      },
+    ];
+
+    const mockPatientTreatments = [
+      {
+        id: 'pt-1',
+        tenantId: mockTenantId,
+        patientId: mockPatientId,
+        treatmentId: 'treatment-1',
+        currentSession: 3,
+        isActive: true,
+        completedAt: null,
+      },
+    ];
+
+    let selectCallCount = 0;
+    (db.select as jest.Mock).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        // Patient validation query
+        return {
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockReturnValue({
+              limit: jest.fn().mockResolvedValue([mockPatient]),
+            }),
+          }),
+        };
+      } else if (selectCallCount === 2) {
+        // Treatment applications query
+        return {
+          from: jest.fn().mockReturnValue({
+            innerJoin: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnValue({
+              orderBy: jest.fn().mockResolvedValue(mockApplications),
+            }),
+          }),
+        };
+      } else {
+        // Patient treatments query
+        return {
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockResolvedValue(mockPatientTreatments),
+          }),
+        };
+      }
+    });
+
+    const result = await patientService.getTreatmentHistory(
+      mockTenantId,
+      mockPatientId
+    );
+
+    expect(result.treatments).toHaveLength(1);
+    expect(result.treatments[0].treatment_id).toBe('treatment-1');
+    expect(result.treatments[0].treatment_name).toBe('Botox');
+    expect(result.treatments[0].total_sessions).toBe(3);
+    expect(result.treatments[0].status).toBe('active');
+    expect(result.treatments[0].current_session).toBe(3);
+    expect(result.treatments[0].applications).toHaveLength(2);
+  });
+
+  it('should return empty array when patient has no treatments', async () => {
+    const mockPatient = {
+      id: mockPatientId,
+      tenantId: mockTenantId,
+    };
+
+    let selectCallCount = 0;
+    (db.select as jest.Mock).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        // Patient validation query
+        return {
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockReturnValue({
+              limit: jest.fn().mockResolvedValue([mockPatient]),
+            }),
+          }),
+        };
+      } else if (selectCallCount === 2) {
+        // Treatment applications query - empty
+        return {
+          from: jest.fn().mockReturnValue({
+            innerJoin: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnValue({
+              orderBy: jest.fn().mockResolvedValue([]),
+            }),
+          }),
+        };
+      } else {
+        // Patient treatments query - empty
+        return {
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockResolvedValue([]),
+          }),
+        };
+      }
+    });
+
+    const result = await patientService.getTreatmentHistory(
+      mockTenantId,
+      mockPatientId
+    );
+
+    expect(result.treatments).toEqual([]);
+  });
+
+  it('should throw 404 error when patient does not exist', async () => {
+    (db.select as jest.Mock).mockReturnValue({
+      from: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnValue({
+          limit: jest.fn().mockResolvedValue([]),
+        }),
+      }),
+    });
+
+    await expect(
+      patientService.getTreatmentHistory(mockTenantId, 'nonexistent-id')
+    ).rejects.toThrow('Patient not found');
+  });
+
+  it('should handle completed treatments correctly', async () => {
+    const mockPatient = {
+      id: mockPatientId,
+      tenantId: mockTenantId,
+    };
+
+    const mockApplications = [
+      {
+        appointmentTreatmentId: 'app-treat-1',
+        appointmentId: 'appt-1',
+        treatmentId: 'treatment-1',
+        treatmentName: 'Laser Treatment',
+        quantity: 1,
+        appointmentDate: new Date('2024-01-15'),
+        initialSessionsCount: 5,
+        initialFrequencyWeeks: 2,
+        maintenanceFrequencyWeeks: null,
+        protocolNotes: null,
+      },
+    ];
+
+    const mockPatientTreatments = [
+      {
+        id: 'pt-1',
+        tenantId: mockTenantId,
+        patientId: mockPatientId,
+        treatmentId: 'treatment-1',
+        currentSession: 5,
+        isActive: false,
+        completedAt: new Date('2024-03-15'),
+      },
+    ];
+
+    let selectCallCount = 0;
+    (db.select as jest.Mock).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockReturnValue({
+              limit: jest.fn().mockResolvedValue([mockPatient]),
+            }),
+          }),
+        };
+      } else if (selectCallCount === 2) {
+        return {
+          from: jest.fn().mockReturnValue({
+            innerJoin: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnValue({
+              orderBy: jest.fn().mockResolvedValue(mockApplications),
+            }),
+          }),
+        };
+      } else {
+        return {
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockResolvedValue(mockPatientTreatments),
+          }),
+        };
+      }
+    });
+
+    const result = await patientService.getTreatmentHistory(
+      mockTenantId,
+      mockPatientId
+    );
+
+    expect(result.treatments[0].status).toBe('completed');
+  });
+});
 
 describe('patientService.getById', () => {
   const mockTenantId = 'tenant-123';

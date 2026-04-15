@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { PatientFormDialog } from './PatientFormDialog';
 import { MedicalHistoryDialog } from './MedicalHistoryDialog';
+import { TreatmentRegistrySection } from './TreatmentRegistrySection';
 import {
   emptyForm,
   NewAppointmentSheet,
@@ -540,6 +541,9 @@ export function PatientDetailPanel({
               </div>
             )}
           </div>
+
+          {/* Treatment Registry */}
+          <TreatmentRegistrySection patientId={patientId} />
 
           {/* Medical history */}
           <div className="px-4 py-4 space-y-4">

@@ -4,3 +4,7 @@ export { PatientActionsMenu } from './PatientActionsMenu';
 export { MedicalHistoryDialog } from './MedicalHistoryDialog';
 export { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 export { PatientDetailPanel } from './PatientDetailPanel';
+export { TreatmentRegistrySection } from './TreatmentRegistrySection';
+export { TreatmentList } from './TreatmentList';
+export { TreatmentListItem } from './TreatmentListItem';
+export { TreatmentTimeline } from './TreatmentTimeline';

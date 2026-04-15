@@ -34,3 +34,32 @@ export interface TreatmentLineItem {
   quantity: number;
   unit_price_cents: number;
 }
+export interface TreatmentHistoryResponse {
+  treatments: TreatmentHistoryItem[];
+}
+
+export interface TreatmentHistoryItem {
+  treatment_id: string;
+  treatment_name: string;
+  total_sessions: number;
+  first_application_date: string;
+  last_application_date: string;
+  status: 'active' | 'completed' | null;
+  current_session: number | null;
+  protocol: TreatmentProtocol | null;
+  applications: TreatmentApplication[];
+}
+
+export interface TreatmentProtocol {
+  initial_sessions_count: number | null;
+  initial_frequency_weeks: number | null;
+  maintenance_frequency_weeks: number | null;
+  protocol_notes: string | null;
+}
+
+export interface TreatmentApplication {
+  id: string;
+  appointment_id: string;
+  appointment_date: string;
+  quantity: number;
+}

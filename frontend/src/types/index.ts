@@ -74,6 +74,10 @@ export type {
   Treatment,
   PatientTreatment,
   TreatmentLineItem,
+  TreatmentHistoryResponse,
+  TreatmentHistoryItem,
+  TreatmentProtocol,
+  TreatmentApplication,
 } from './treatments';
 
 // Session photo types
