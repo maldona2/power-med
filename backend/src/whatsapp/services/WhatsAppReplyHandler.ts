@@ -9,7 +9,7 @@
  * Tenant resolution uses WHATSAPP_DEFAULT_TENANT_ID (single-tenant mode).
  */
 
-import { and, desc, eq, or } from 'drizzle-orm';
+import { and, desc, eq, inArray, or } from 'drizzle-orm';
 import { db, appointments, patients, users } from '../../db/client.js';
 import { update as updateAppointment } from '../../services/appointmentService.js';
 import { MetaAPIClient } from './MetaAPIClient.js';
@@ -82,19 +82,22 @@ export class WhatsAppReplyHandler {
 
     const tenantId = patient.tenantId!;
 
-    // Find most recent pending appointment for this patient
+    // Find most recent actionable appointment for this patient.
+    // Appointments created by a professional start as 'confirmed', so we must
+    // match both 'pending' and 'confirmed' — not just 'pending'.
     const [appointment] = await db
       .select({
         id: appointments.id,
         scheduledAt: appointments.scheduledAt,
         durationMinutes: appointments.durationMinutes,
+        status: appointments.status,
       })
       .from(appointments)
       .where(
         and(
           eq(appointments.tenantId, tenantId),
           eq(appointments.patientId, patient.id),
-          eq(appointments.status, 'pending')
+          inArray(appointments.status, ['pending', 'confirmed'])
         )
       )
       .orderBy(desc(appointments.scheduledAt))
@@ -103,7 +106,7 @@ export class WhatsAppReplyHandler {
     if (!appointment) {
       logger.info(
         { tenantId, patientId: patient.id },
-        'WhatsAppReplyHandler: no pending appointment found'
+        'WhatsAppReplyHandler: no actionable appointment found'
       );
       return;
     }
@@ -117,16 +120,35 @@ export class WhatsAppReplyHandler {
 
     const professionalName = professional?.fullName ?? 'el profesional';
 
-    const newStatus = action === 'confirm' ? 'confirmed' : 'cancelled';
-
-    try {
-      await updateAppointment(tenantId, appointment.id, { status: newStatus });
-    } catch (err) {
-      logger.error(
-        { err, appointmentId: appointment.id, action },
-        'WhatsAppReplyHandler: failed to update appointment status'
-      );
-      return;
+    if (action === 'confirm') {
+      // Already confirmed by the professional — no status update needed.
+      // Still reply to patient and notify doctor that they confirmed attendance.
+      if (appointment.status !== 'confirmed') {
+        try {
+          await updateAppointment(tenantId, appointment.id, {
+            status: 'confirmed',
+          });
+        } catch (err) {
+          logger.error(
+            { err, appointmentId: appointment.id, action },
+            'WhatsAppReplyHandler: failed to update appointment status'
+          );
+          return;
+        }
+      }
+    } else {
+      // cancel
+      try {
+        await updateAppointment(tenantId, appointment.id, {
+          status: 'cancelled',
+        });
+      } catch (err) {
+        logger.error(
+          { err, appointmentId: appointment.id, action },
+          'WhatsAppReplyHandler: failed to update appointment status'
+        );
+        return;
+      }
     }
 
     // Reply to the patient

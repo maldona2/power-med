@@ -38,7 +38,7 @@ describe('WhatsApp webhook message extraction', () => {
 
     const messages = payload.entry?.[0]?.changes?.[0]?.value?.messages ?? [];
     const msg = messages[0]!;
-    
+
     let messageText: string | undefined;
     if (msg.type === 'text' && msg.text?.body) {
       messageText = msg.text.body;
@@ -86,7 +86,7 @@ describe('WhatsApp webhook message extraction', () => {
 
     const messages = payload.entry?.[0]?.changes?.[0]?.value?.messages ?? [];
     const msg = messages[0]!;
-    
+
     let messageText: string | undefined;
     if (msg.type === 'text' && msg.text?.body) {
       messageText = msg.text.body;
@@ -132,7 +132,7 @@ describe('WhatsApp webhook message extraction', () => {
 
     const messages = payload.entry?.[0]?.changes?.[0]?.value?.messages ?? [];
     const msg = messages[0]!;
-    
+
     let messageText: string | undefined;
     if (msg.type === 'text' && msg.text?.body) {
       messageText = msg.text.body;

@@ -114,7 +114,9 @@ const COUNTRY_CODES = [
 
 function splitPhone(stored: string): { countryCode: string; local: string } {
   const digits = stored.replace(/\D/g, '');
-  const sorted = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length);
+  const sorted = [...COUNTRY_CODES].sort(
+    (a, b) => b.code.length - a.code.length
+  );
   for (const cc of sorted) {
     if (digits.startsWith(cc.code)) {
       return { countryCode: cc.code, local: digits.slice(cc.code.length) };
@@ -191,7 +193,9 @@ export function ProfilePage() {
     resumeSubscription,
   } = useSubscription();
   const [doctor, setDoctor] = useState<ProfileDoctor>(() => {
-    const d = user ? userToDoctor(user) : userToDoctor({ email: '', fullName: null });
+    const d = user
+      ? userToDoctor(user)
+      : userToDoctor({ email: '', fullName: null });
     return d;
   });
   const [phoneCountryCode, setPhoneCountryCode] = useState(() => {
@@ -506,7 +510,10 @@ export function ProfilePage() {
                   <Label htmlFor="phone">Teléfono</Label>
                   {isEditing ? (
                     <div className="flex gap-2">
-                      <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
+                      <Select
+                        value={phoneCountryCode}
+                        onValueChange={setPhoneCountryCode}
+                      >
                         <SelectTrigger className="w-[100px] h-11">
                           <SelectValue />
                         </SelectTrigger>
@@ -532,7 +539,9 @@ export function ProfilePage() {
                   ) : (
                     <div className="flex h-11 items-center rounded-lg border bg-muted/30 px-3">
                       <span className="text-sm">
-                        {doctor.phone ? `+${phoneCountryCode} ${doctor.phone}` : '—'}
+                        {doctor.phone
+                          ? `+${phoneCountryCode} ${doctor.phone}`
+                          : '—'}
                       </span>
                     </div>
                   )}

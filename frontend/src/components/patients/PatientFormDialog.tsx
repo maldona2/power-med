@@ -36,7 +36,9 @@ const COUNTRY_CODES = [
 
 function splitPhone(stored: string): { countryCode: string; local: string } {
   const digits = stored.replace(/\D/g, '');
-  const sorted = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length);
+  const sorted = [...COUNTRY_CODES].sort(
+    (a, b) => b.code.length - a.code.length
+  );
   for (const cc of sorted) {
     if (digits.startsWith(cc.code)) {
       return { countryCode: cc.code, local: digits.slice(cc.code.length) };
@@ -74,7 +76,9 @@ export function PatientFormDialog({
   useEffect(() => {
     if (patient) {
       const stored = patient.phone ?? '';
-      const { countryCode: cc, local } = stored ? splitPhone(stored) : { countryCode: '54', local: '' };
+      const { countryCode: cc, local } = stored
+        ? splitPhone(stored)
+        : { countryCode: '54', local: '' };
       setCountryCode(cc);
       setFormState({
         first_name: patient.first_name,

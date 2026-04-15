@@ -105,14 +105,12 @@ router.post(
 
         if (!messageText) continue;
 
-        whatsAppReplyHandler
-          .handle('', msg.from, messageText)
-          .catch((err) => {
-            logger.error(
-              { err, from: msg.from },
-              'WhatsApp webhook: reply handler error'
-            );
-          });
+        whatsAppReplyHandler.handle('', msg.from, messageText).catch((err) => {
+          logger.error(
+            { err, from: msg.from },
+            'WhatsApp webhook: reply handler error'
+          );
+        });
       }
 
       res.status(200).json({ status: 'ok' });
