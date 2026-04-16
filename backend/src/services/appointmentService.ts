@@ -14,6 +14,10 @@ import {
   sendAppointmentCancelled,
 } from './mailService.js';
 import { whatsAppNotificationService } from '../whatsapp/services/WhatsAppNotificationService.js';
+import {
+  createCancellationToken,
+  buildCancelUrl,
+} from './cancellationTokenService.js';
 import { syncQueue } from './syncQueue.js';
 import { googleAuthService } from './googleAuthService.js';
 import * as patientTreatmentService from './patientTreatmentService.js';
@@ -539,7 +543,7 @@ export async function create(
     input.patient_id,
     row.scheduledAt,
     row.durationMinutes
-  ).then((ctx) => {
+  ).then(async (ctx) => {
     const notificationData = {
       patientName: ctx.patientName,
       professionalName: ctx.professionalName,
@@ -552,10 +556,20 @@ export async function create(
       sendAppointmentBooked(ctx.patientEmail, notificationData, row.id);
     }
     if (ctx.patientPhone) {
-      void whatsAppNotificationService.sendAppointmentBooked(
-        ctx.patientPhone,
-        notificationData
-      );
+      try {
+        const token = await createCancellationToken(row.id, tenantId);
+        const cancelUrl = buildCancelUrl(token);
+        void whatsAppNotificationService.sendAppointmentBookedV2(
+          ctx.patientPhone,
+          { ...notificationData, cancelUrl }
+        );
+      } catch {
+        // Token generation failed — fall back to template without cancel link
+        void whatsAppNotificationService.sendAppointmentBooked(
+          ctx.patientPhone,
+          notificationData
+        );
+      }
     }
   });
 

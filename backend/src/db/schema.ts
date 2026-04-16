@@ -1219,3 +1219,48 @@ export const paymentPlansRelations = relations(paymentPlans, ({ one }) => ({
     references: [patients.id],
   }),
 }));
+
+// ─── appointment_cancellation_tokens ─────────────────────────────────────────
+
+export const appointmentCancellationTokens = pgTable(
+  'appointment_cancellation_tokens',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    appointmentId: uuid('appointment_id')
+      .notNull()
+      .references(() => appointments.id, { onDelete: 'cascade' }),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').unique().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    used: boolean('used').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index('idx_act_appointment').on(table.appointmentId),
+    index('idx_act_token_hash').on(table.tokenHash),
+    index('idx_act_expires_at').on(table.expiresAt),
+  ]
+);
+
+export type AppointmentCancellationToken =
+  typeof appointmentCancellationTokens.$inferSelect;
+export type NewAppointmentCancellationToken =
+  typeof appointmentCancellationTokens.$inferInsert;
+
+export const appointmentCancellationTokensRelations = relations(
+  appointmentCancellationTokens,
+  ({ one }) => ({
+    appointment: one(appointments, {
+      fields: [appointmentCancellationTokens.appointmentId],
+      references: [appointments.id],
+    }),
+    tenant: one(tenants, {
+      fields: [appointmentCancellationTokens.tenantId],
+      references: [tenants.id],
+    }),
+  })
+);

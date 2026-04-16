@@ -28,6 +28,7 @@ import { DebtDashboardPage } from '@/pages/DebtDashboardPage';
 import { HelpPage } from '@/pages/HelpPage';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
+import { CancelAppointmentPage } from '@/pages/CancelAppointmentPage';
 
 function App() {
   return (
@@ -117,6 +118,7 @@ function App() {
               />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/cancel/:token" element={<CancelAppointmentPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>

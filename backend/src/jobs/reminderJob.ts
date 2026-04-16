@@ -8,6 +8,10 @@ import {
   getSuccessRate,
 } from '../services/reminderService.js';
 import { whatsAppNotificationService } from '../whatsapp/services/WhatsAppNotificationService.js';
+import {
+  createCancellationToken,
+  buildCancelUrl,
+} from '../services/cancellationTokenService.js';
 import logger from '../utils/logger.js';
 
 const BATCH_SIZE = 100;
@@ -235,8 +239,16 @@ export async function sendReminders(): Promise<void> {
               prof?.subscriptionPlan === 'gold' &&
               prof?.subscriptionStatus === 'active';
             if (row.patientPhone && isGold) {
-              void whatsAppNotificationService
-                .sendAppointmentReminder(row.patientPhone, notificationData)
+              // Generate a 48h cancel token so the patient can cancel
+              // directly from the reminder message
+              createCancellationToken(row.appointmentId, row.tenantId, 48)
+                .then((token) => {
+                  const cancelUrl = buildCancelUrl(token);
+                  return whatsAppNotificationService.sendAppointmentReminderV2(
+                    row.patientPhone!,
+                    { ...notificationData, cancelUrl }
+                  );
+                })
                 .catch((err) => {
                   logger.warn(
                     { err, appointmentId: row.appointmentId },

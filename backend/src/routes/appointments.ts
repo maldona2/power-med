@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import * as appointmentService from '../services/appointmentService.js';
+import { validateAndConsumeCancellationToken } from '../services/cancellationTokenService.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { LimitEnforcer } from '../subscriptions/services/LimitEnforcer.js';
@@ -55,6 +56,48 @@ function getTenantId(req: Request): string {
   }
   return tenantId;
 }
+
+// ─── Public: cancel appointment via one-time token (from WA link) ────────────
+
+router.post(
+  '/cancel-by-token',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { token } = req.body as { token?: string };
+      if (!token || typeof token !== 'string') {
+        res.status(400).json({ error: 'Token requerido' });
+        return;
+      }
+
+      const payload = await validateAndConsumeCancellationToken(token);
+      if (!payload) {
+        res
+          .status(410)
+          .json({
+            error: 'El link de cancelación no es válido o ya fue utilizado.',
+          });
+        return;
+      }
+
+      const appt = await appointmentService.cancel(
+        payload.tenantId,
+        payload.appointmentId
+      );
+      if (!appt) {
+        res.status(404).json({ error: 'Turno no encontrado' });
+        return;
+      }
+
+      logger.info(
+        { appointmentId: payload.appointmentId },
+        'Appointment cancelled via WA cancel link'
+      );
+      res.json({ message: 'Turno cancelado exitosamente' });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
 
 router.get(
   '/',
